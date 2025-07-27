@@ -48,3 +48,9 @@ def best_xor_key(hex: bytes) -> int:
 def decrypt_aes_ecb(ciphertext, key):
     cipher =  Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
     return cipher.decryptor().update(ciphertext)
+
+def pkcs7_pad(text, block_size):
+    if len(text) % block_size == 0:
+        return text
+    pad_size = block_size - (len(text) % block_size)
+    return b"".join([text, bytes([pad_size]) * pad_size])

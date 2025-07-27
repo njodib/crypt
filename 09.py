@@ -1,6 +1,7 @@
-def pad(text, block_size):
-    if len(text) % block_size == 0:
-        return text
-    pad_size = block_size - (len(text) % block_size)
-    return b"".join([text, bytes([pad_size]) * pad_size])
-print(pad(b"YELLOW SUBMARINE", 20))
+from utils import pkcs7_pad
+
+txt = "YELLOW SUBMARINE"
+block_size = 20
+padded = pkcs7_pad(b"YELLOW SUBMARINE", 20)
+print(padded)
+assert padded == b'YELLOW SUBMARINE\x04\x04\x04\x04'
