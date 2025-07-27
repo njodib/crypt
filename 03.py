@@ -8,6 +8,6 @@ if __name__ == '__main__':
 
     key = best_xor_key(raw)
     
-    print("3:",single_xor(raw, key))
+    print(single_xor(raw, key))
     
     
