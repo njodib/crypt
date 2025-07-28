@@ -49,8 +49,22 @@ def decrypt_aes_ecb(ciphertext, key):
     cipher =  Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
     return cipher.decryptor().update(ciphertext)
 
+def encrypt_aes_ecb(plaintext, key):
+    cipher =  Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
+    return cipher.encryptor().update(plaintext)
+
+def encrypt_aes_cbc(plaintext, key, iv):
+    cipher =  Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    return cipher.encryptor().update(plaintext)
+
 def pkcs7_pad(text, block_size):
     if len(text) % block_size == 0:
         return text
     pad_size = block_size - (len(text) % block_size)
     return b"".join([text, bytes([pad_size]) * pad_size])
+
+def aes_cbc_decrypt(ciphertext, key, iv = [0]*16):
+    decrypted = (fixed_xor(decrypt_aes_ecb(ciphertext[0:16], key), iv))
+    for i in range(16, len(ciphertext), 16):
+        decrypted += (fixed_xor(decrypt_aes_ecb(ciphertext[i:i+16], key), ciphertext[i-16:i]))
+    return decrypted
