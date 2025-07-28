@@ -1,7 +1,5 @@
-from utils import decrypt_aes_ecb, pkcs7_pad, fixed_xor, aes_cbc_decrypt
+from utils import pkcs7_pad, aes_cbc_decrypt
 from base64 import b64decode
-
-
 
 with open("10.txt") as input_file:
     data = b64decode(input_file.read())
