@@ -1,4 +1,8 @@
 import binascii
+from base64 import b64decode
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
 
 def fixed_xor(a: bytes, b: bytes) -> bytes:
     return bytes (i^j for i,j in zip(a,b))
@@ -40,3 +44,7 @@ def best_xor_key(hex: bytes) -> int:
             best_key = key
             min_error = candidate_error
     return best_key
+
+def decrypt_aes_ecb(ciphertext, key):
+    cipher =  Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
+    return cipher.decryptor().update(ciphertext)
