@@ -1,6 +1,7 @@
-from Utils.AES import aes_cbc_encrypt, aes_cbc_decrypt
+from Utils.AES import aes_cbc_encrypt, aes_cbc_decrypt, aes_ecb_decrypt, aes_ecb_encrypt
 from random import randbytes
 from Utils.Padding import pkcs7
+from Utils.BytesLogic import xor
 
 class Oracle:
     def __init__(self):
@@ -12,16 +13,20 @@ class Oracle:
     def encrypt(self, user_input: bytes):
         ptxt = user_input.replace(';', '').replace('=', '').encode()
         ptxt = self.pre + ptxt + self.post
-        return aes_cbc_encrypt(pkcs7(ptxt, 16), self.key, self.iv)
+        ctxt = aes_cbc_encrypt(pkcs7(ptxt, 16), self.key, self.iv)
+        #print(ctxt[32:48])
+        return ctxt
 
     def decrypt_and_check_admin(self, ctxt):
         data = aes_cbc_decrypt(ctxt, self.key, self.iv)
-        #print(data)
-        return data, b';admin=true' in data
-
+        return b';admin=true' in data
 
 profile = Oracle()
-ctxt = profile.encrypt("puta;=puta")
-##print(ctxt)
-print(profile.decrypt_and_check_admin(ctxt))
+ctxt = profile.encrypt("hello9admin9true")
+block2 = ctxt[16:32]
+bit_flipper = b'\x00'*5+b'\x02'+b'\x00'*5+b'\x04'+b'\x00'*4
+flipped_block2 = xor(block2, bit_flipper)
+ctxt_flipped = ctxt[:16] + flipped_block2 + ctxt[32:]
 
+assert profile.decrypt_and_check_admin(ctxt_flipped)
+print("SUCCESS")
