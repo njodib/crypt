@@ -11,6 +11,5 @@ def detect_pkcs7(data: bytes):
 
 def strip_pkcs7(data: bytes):
     if not detect_pkcs7(data):
-        return data
-    
+        raise ValueError
     return data[:-data[len(data)-1]]
