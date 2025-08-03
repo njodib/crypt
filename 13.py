@@ -69,22 +69,3 @@ dec = prof.get_decrypted_profile(ctxt)
 print(dec)
 
 assert dec[b'role'] == b'admin'
-
-'''
-def do_evil() -> bytes:
-    prof = Profile()
-    # generate a ciphertext for an admin profile
-    ct_1 = prof.get_encrypted_profile(b'\x00'*10 + b'admin' + b'\x0b'*11)
-    ct_2 = prof.get_encrypted_profile((b'eli@sohl.com '))
-    return ct_2[:32] + ct_1[16:32]
-
-
-if __name__ == "__main__":
-    prof = Profile()
-    # generate a ciphertext for an admin profile
-    ct_1 = prof.get_encrypted_profile(b'\x00'*10 + b'admin' + b'\x0b'*11)
-    ct_2 = prof.get_encrypted_profile((b'eli@sohl.com '))
-    poop = ct_2[:32] + ct_1[16:32]
-    print("Malicious ciphertext:", poop)
-    print("Decryption:", (poop))
-'''
