@@ -6,7 +6,7 @@ if __name__ == '__main__':
     OUT = b'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t'
     
     str_bytes = binascii.unhexlify(IN)
-    print("1:", str_bytes)
+    print(str_bytes)
     
     str_base64 = base64.b64encode(str_bytes)
     assert str_base64 == OUT

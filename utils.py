@@ -1,8 +1,17 @@
+import binascii
+
 def fixed_xor(a: bytes, b: bytes) -> bytes:
     return bytes (i^j for i,j in zip(a,b))
 
-def single_xor(a: bytes, key) -> bytes:
+def single_xor(a: bytes, key: int) -> bytes:
     return bytes (i^key for i in a)
+
+def repeating_xor(a: bytes, key) -> bytes:
+    res = []
+    for i in range(len(a)):
+        res.append(a[i] ^ key[i%len(key)])
+    sol = binascii.hexlify(bytes(res))
+    return sol
 
 frequencies = {'a': 0.0855, 'b': 0.0160, 'c': 0.0316, 'd': 0.0387, 'e': 0.1209,
                'f': 0.0218, 'g': 0.0209, 'h': 0.0496, 'i': 0.0732, 'j': 0.0022,
@@ -20,12 +29,13 @@ def error(candidate: bytes) -> float:
         score += err
     return score
 
-def best_xor_key(hex: bytes) -> str:
+def best_xor_key(hex: bytes) -> int:
     best_key = -1
     min_error = float('inf')
-    for key in range(0,256):
+    for key in range(32,128):
         candidate = single_xor(hex, key)
         candidate_error = error(candidate)
+        #print(key, candidate_error)
         if candidate_error < min_error:
             best_key = key
             min_error = candidate_error

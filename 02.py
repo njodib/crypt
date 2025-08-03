@@ -11,5 +11,5 @@ if __name__ == '__main__':
     b = binascii.unhexlify(IN_B)
     sol = fixed_xor(a, b)
 
-    print("2:", sol)
+    print(sol)
     assert binascii.hexlify(sol) == OUT
