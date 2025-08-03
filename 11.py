@@ -3,18 +3,15 @@ from random import randint, randbytes
 import numpy as np
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from Utils.AES import aes_cbc_encrypt, aes_ecb_encrypt
 
 def rand_aes_encrypt(plaintext, key):
     plaintext = randbytes(randint(5,10)) + plaintext + randbytes(randint(5,10))
     plaintext = pkcs7_pad(plaintext, 16)
     if randint(0,1) == 0:
-        iv = randbytes(16)
-        cipher =  Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-        mode = "CBC"
+        return aes_cbc_encrypt(plaintext, key, randbytes(16)), "CBC"
     else:
-        cipher =  Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
-        mode = "ECB"
-    return cipher.encryptor().update(plaintext), mode
+        return aes_ecb_encrypt(plaintext, key), "ECB"
 
 def aes_detect_mode(ciphertext):
     array = np.frombuffer(ciphertext, dtype="uint8").reshape(-1, 16)

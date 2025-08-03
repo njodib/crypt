@@ -2,13 +2,7 @@ from utils import pkcs7_pad
 from random import randint, randbytes
 import numpy as np
 from base64 import b64decode
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
-def aes_ecb_encrypt(plaintext, key):
-    plaintext = pkcs7_pad(plaintext, 16)
-    cipher =  Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
-    return cipher.encryptor().update(plaintext)
+from Utils.AES import aes_ecb_encrypt
 
 def get_block_size(ciphertext, key):
     len1 = len(aes_ecb_encrypt(ciphertext, key))
