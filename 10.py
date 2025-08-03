@@ -1,6 +1,9 @@
-from utils import pkcs7_pad, aes_cbc_decrypt
+from Utils.Padding import pkcs7
+from Utils.AES import aes_cbc_decrypt
 from base64 import b64decode
 
 with open("10.txt") as input_file:
-    data = b64decode(input_file.read())
-print(aes_cbc_decrypt(pkcs7_pad(data, 16), b"YELLOW SUBMARINE").decode('utf-8'))
+    ctxt = pkcs7(b64decode(input_file.read()), 16)
+key = b"YELLOW SUBMARINE"
+iv = [0]*16
+print(aes_cbc_decrypt(ctxt, key, iv).decode('utf-8'))

@@ -19,11 +19,14 @@ def aes_cbc_encrypt(data:bytes, key:bytes, iv:bytes):
         prev = enc_block
     return ctxt
 
-def aes_ecb_decrypt(data: bytes, key: bytes):
+def aes_ecb_decrypt(data: bytes, key: bytes, strip=True):
     cipher = AES.new(key, AES.MODE_ECB)
-    return strip_pkcs7(cipher.decrypt(data))
+    ptxt = cipher.decrypt(data)
+    if strip: return strip_pkcs7(ptxt)
+    else: return ptxt
 
-def aes_cbc_decrypt(data:bytes, key:bytes, iv:bytes):
+
+def aes_cbc_decrypt(data:bytes, key:bytes, iv:bytes, strip=True):
     bs = AES.block_size
     ptxt = b''
     prev = iv
@@ -32,4 +35,5 @@ def aes_cbc_decrypt(data:bytes, key:bytes, iv:bytes):
         dec_block = aes_ecb_decrypt(curr_ctxt_block, key)
         ptxt += xor(prev, dec_block)
         prev = curr_ctxt_block
-    return strip_pkcs7(ptxt)
+    if strip: return strip_pkcs7(ptxt)
+    else: return ptxt
