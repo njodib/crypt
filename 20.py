@@ -43,15 +43,13 @@ def guess_keystream(ciphertexts: List[bytes]) -> bytes:
 
 
 #gets all ptxts, ctxts from 20.txt
-with open('20.txt') as fp:
+with open('Data/20.txt') as fp:
     ctxts = [enc(b64decode(line)) for line in fp]
 
 
-for _ in range(4):
-    peepee = guess_keystream(ctxts)
-    print()
+peepee = guess_keystream(ctxts)
+print()
 
-    for text in ctxts:
-        plaintext = xor(text, peepee)
-        print(plaintext)
-        print("\n----\n")
+for text in ctxts:
+    plaintext = xor(text, peepee)
+    print(plaintext)

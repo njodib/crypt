@@ -26,7 +26,7 @@ def get_keysize(x):
     return best_keysize
         
 assert hamming(b"this is a test", b"wokka wokka!!!") == 37
-with open("06.txt") as input_file:
+with open("Data/06.txt") as input_file:
     data = b64decode(input_file.read())
 keysize = get_keysize(data)
 key = []

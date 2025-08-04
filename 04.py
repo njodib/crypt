@@ -4,7 +4,7 @@ import binascii
 min_error = float('inf')
 message = None
 
-with open('04.txt') as fp:
+with open('Data/04.txt') as fp:
     for line in fp:
         l = binascii.unhexlify(line.strip())
         key = best_xor_key(l)
