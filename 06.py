@@ -1,5 +1,6 @@
 from base64 import b64decode
-from utils import repeating_xor, best_xor_key
+from utils import repeating_xor#, best_xor_key
+from Utils.BytesLogic import best_xor_key
 import binascii
 
 def hamming(x: str, y: str) -> int:
@@ -32,5 +33,5 @@ key = []
 for i in range(keysize):
     key.append(best_xor_key(data[i::keysize]))
 
-print("\nKEY:\n",bytes(key))
+print("\nKEY:\n",key)
 print("\nMESSAGE:\n",binascii.unhexlify(repeating_xor(data, key)))
