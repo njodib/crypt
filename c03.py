@@ -1,26 +1,3 @@
-#Basic XOR
-def xor(x: bytes, y:bytes):
-    return bytes (xb^yb for xb,yb in zip(x,y))
-
-#Catch-all XOR
-def xor_bytes(*args: bytes, fixed=False, quiet=True) -> bytes:
-    #Ensure there is at least one argument
-    assert len(args) > 0
-
-    #Ensure arguments are same length if fixed
-    if fixed: assert len(set(map(len, args))) == 1
-    
-    #Cycle arg and res to desired length. XOR each byte.
-    result_size = max(map(len, args))
-    res = args[0]
-    for arg in args[1:]:
-        if not quiet: print(res, arg)
-        res = bytes(res[i%len(res)]^arg[i%len(arg)] for i in range(result_size))
-    return res
-
-def single_xor(a: bytes, key: int) -> bytes:
-    return bytes (i^key for i in a)
-
 frequencies = {'a': 0.0855, 'b': 0.0160, 'c': 0.0316, 'd': 0.0387, 'e': 0.1209,
                'f': 0.0218, 'g': 0.0209, 'h': 0.0496, 'i': 0.0732, 'j': 0.0022,
                'k': 0.0081, 'l': 0.0420, 'm': 0.0253, 'n': 0.0717, 'o': 0.0747,
@@ -37,14 +14,23 @@ def error(candidate: bytes) -> float:
         score += err
     return score
 
-def best_xor_key(hex: bytes) -> int:
-    best_key = -1
+def xor_single(x:bytes, y:int):
+    return bytes([xb^y for xb in x])
+
+def best_xor_key(data: bytes) -> bytes:
+    best_key = b''
     min_error = float('inf')
     for key in range(32, 128):
-        candidate = single_xor(hex, key)
+        candidate = xor_single(data, key)
         candidate_error = error(candidate)
-        #print(key, candidate_error)
         if candidate_error < min_error:
             best_key = key
             min_error = candidate_error
     return best_key
+
+if __name__ == '__main__':
+    IN = bytes.fromhex('1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736')
+    key = best_xor_key(IN)
+    print(xor_single(IN, key).decode('utf-8'))
+    
+    

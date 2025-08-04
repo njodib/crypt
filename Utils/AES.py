@@ -2,6 +2,26 @@ from Crypto.Cipher import AES
 from Utils.Padding import pkcs7, strip_pkcs7
 from Utils.BytesLogic import xor
 
+class AES:
+    def __init__(self, key, mode):
+        self.key = key
+        self.mode = mode
+
+    def enc(self, data:bytes, key:bytes, pad=True):
+        match self.mode:
+            case "ECB":
+                return self._aes_ecb_encrypt(data, key, pad)
+            case _:
+                return ValueError
+    
+    def dec(self, data:bytes, key:bytes, strip=True):
+        match self.mode:
+            case "ECB":
+                return aes_ecb_decrypt(data, key)
+            case _:
+                return ValueError
+        
+
 def aes_ecb_encrypt(data: bytes, key: bytes):
     cipher = AES.new(key, AES.MODE_ECB)
     return cipher.encrypt(pkcs7(data, AES.block_size))
