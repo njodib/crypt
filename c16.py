@@ -14,7 +14,6 @@ class Oracle:
         ptxt = user_input.replace(';', '').replace('=', '').encode()
         ptxt = self.pre + ptxt + self.post
         ctxt = self.cipher.enc(ptxt, pad=True)
-        #print(ctxt[32:48])
         return ctxt
 
     def decrypt_and_check_admin(self, ctxt):
@@ -22,6 +21,8 @@ class Oracle:
         return b';admin=true' in data
 
 if __name__ == "__main__":
+    # how come i need comments to explain everything?
+    # like ummm just look at it!!
     profile = Oracle()
     ctxt = profile.encrypt("hello9admin9true")
     block2 = ctxt[16:32]

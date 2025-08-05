@@ -1,62 +1,51 @@
-from random import randbytes, randint
-from utils import pkcs7_pad, aes_ecb_encrypt
 from base64 import b64decode
 from math import ceil
+from random import randbytes, randint
+from Utils.AES import AES_ECB
 from c08 import blockify
-from c12 import get_block_size, detect_msg_length
-from itertools import count
-from c13 import get_injection_block, get_prefix_size, get_postfix_size
+from c12 import get_block_size
+from c13 import get_prefix_size, get_postfix_size
 
-_key = randbytes(16)
-_secret_prefix = randbytes(randint(0,69))
+class Oracle():
+    def __init__(self):
+        self.secret_prefix = randbytes(randint(0,69))
+        self.secret_postfix = b64decode("""
+            Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
+            aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
+            dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
+            YnkK
+        """)
+        self.cipher = AES_ECB(randbytes(16))
 
-_secret_postfix = b64decode("""
-Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg\
-aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
-dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
-YnkK
-""")
-
-def enc(ptxt: bytes) -> bytes:
-    ptxt = _secret_prefix + ptxt + _secret_postfix
-    return aes_ecb_encrypt(pkcs7_pad(ptxt, 16), _key)
-
-def get_encryption_details():
-    block_size = get_block_size(enc)
-    inj = get_injection_block
-    prefix_length = get_prefix_size(enc)
-    postfix_length = get_postfix_size(enc)
-    return block_size, inj, prefix_length, postfix_length
-
+    def enc(self, ptxt: bytes) -> bytes:
+        ptxt = self.secret_prefix + ptxt + self.secret_postfix
+        return self.cipher.enc(ptxt, pad=True)
 
 if __name__ == "__main__":
-    block_size = get_block_size(enc)
-    inj_block = get_injection_block(enc)
-    pre_size = get_prefix_size(enc)
-    post_size = get_postfix_size(enc)
+    # Define the oracle
+    oracle = Oracle().enc
 
-    #text to fill prefix block(s)
-    
-    ptxt_prefix = (b'X'*(((inj_block+1)*block_size)-pre_size))
+    # Get encryption information
+    bs = get_block_size(oracle)
+    prefix_size = get_prefix_size(oracle)
+    postfix_size = get_postfix_size(oracle)
 
-    #Add n ptxt blocks under the n secret post-fix block(s)
-    n = ceil(post_size / block_size)
-    ptxt_test = b"A"*((n*block_size))
+    # Pad injection block (inj) to its end
+    # Pad n blocks, where n is the number of blocks of postfix
+    # Subtract 1 byte (we search for this one)
+    inj = prefix_size//bs
+    inj_pad = ((inj+1)*bs)-prefix_size
+    n = ceil(postfix_size / bs)
+    pad = b'A'*(inj_pad+(n*bs)-1)
 
-    top = inj_block + n
-    ptxt = ptxt_prefix + ptxt_test
-
-
-    found_bytes = b''
-
-    for _ in range(post_size):
-        ptxt_test = ptxt_test[1:]
-        ptxt = ptxt_prefix + ptxt_test
-        hii = enc(ptxt)[top*block_size : (top+1)*block_size]
-
+    # Decrypt bytes
+    ptxt = b''
+    for i in range(postfix_size):
+        ref = blockify(oracle(pad))[inj + n]
         for b in range(256):
-            puta = enc(ptxt+found_bytes+bytes([b]))[top*block_size : (top+1)*block_size]
-            if puta == hii:
-                found_bytes += bytes([b])
+            test = blockify(oracle(pad+ptxt+bytes([b])))[inj + n]
+            if ref == test:
+                ptxt += bytes([b])
+                pad = pad[:-1]
                 break
-    print(found_bytes.decode('utf-8'))
+    print(ptxt.decode('utf-8'))

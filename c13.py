@@ -61,12 +61,14 @@ class Profile:
         ptxt = AES_ECB(self.key).dec(ctxt, strip=True)
         return self.kv_parse(ptxt)
 
+# U could just inspect the cookie too.
+# But this code generalizes to any cookie
 if __name__ == "__main__":
-    #Define the encryption oracle
+    # Define the encryption oracle
     prof = Profile()
     oracle = prof.enc
 
-    #Encryption information from oracle
+    # Encryption information from oracle
     bs = get_block_size(oracle)
     msg_len = detect_msg_length(oracle)
     inj = get_injection_block(oracle)
@@ -85,7 +87,7 @@ if __name__ == "__main__":
     admin_email = b"X"*admin_email_len #Any 13 char email
     ctxt = oracle(admin_email)[:-bs] + admin_ctxt
 
-    #Test and print
+    # Test and print
     dec = prof.dec(ctxt)
     print(dec)
     assert dec['role'] == 'admin'
