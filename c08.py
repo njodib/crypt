@@ -1,7 +1,7 @@
 BLOCK_SIZE = 16
 
-def blockify(data: bytes):
-    return [data[i:i+BLOCK_SIZE] for i in range(0,len(data),BLOCK_SIZE)]
+def blockify(data: bytes, bs:int=16):
+    return [data[i:i+bs] for i in range(0,len(data),bs)]
 
 if __name__ == "__main__":
     result = [] #Store lines with duplicate blocks in result

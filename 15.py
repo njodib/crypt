@@ -1,25 +1,22 @@
-def pkcs7_pad_valid(b: bytes):
-    n = b[-1]
-    if n == 0 or len(b) < n or not b.endswith(bytes([n]*n)):
-        raise ValueError("INVALID PKCS7 PADDING")
-    return True
+from Utils.Padding import detect_pkcs7
 
-tests = [
-    b"ICE ICE BABY\x04\x04\x04\x04",\
-    b"ICE ICE BABY\x05\x05\x05\x05",\
-    b"ICE ICE BABY\x01\x02\x03\x04"\
-]
-assert pkcs7_pad_valid(tests[0]) == True
-try:
-    pkcs7_pad_valid(tests[1])
-except:
-    pass
-else:
-    raise Exception("ACCEPTED INVALID PADDING")
-try:
-    pkcs7_pad_valid(tests[2])
-except:
-    pass
-else:
-    raise Exception("ACCEPTED INVALID PADDING")
-print("SUCCESS")
+if __name__ == "__main__":
+    valid = [
+        b"ICE ICE BABY\x04\x04\x04\x04",
+        b"LOADSIXTEENBYTES"
+    ]
+
+    invalid = [
+        b"ICE ICE BABY\x05\x05\x05\x05"
+        b"ICE ICE BABY\x01\x02\x03\x04"
+    ]
+
+    for x in valid:
+        assert detect_pkcs7(x) == True
+
+    for x in invalid:
+        try: detect_pkcs7(x)
+        except: pass
+        else: raise Exception("ACCEPTED INVALID PADDING")
+
+    print("SUCCESS")

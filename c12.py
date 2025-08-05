@@ -11,7 +11,8 @@ def get_block_size(oracle):
         if len2 != len1:
             return len2 - len1
 
-def detect_msg_length(oracle, block_size: int) -> int:
+def detect_msg_length(oracle) -> int:
+    block_size = get_block_size(oracle)
     base_len = len(oracle(b''))
     for i in range(block_size+1):
         tmp_len = len(oracle(b'A'*i))
@@ -45,7 +46,7 @@ if __name__ == "__main__":
 
     #Decryption
     ptxt = b''
-    for i in range(detect_msg_length(enc, bs)):
+    for i in range(detect_msg_length(enc)):
         pad = b'X'*(bs-1-(i%bs)) #padding ensures byte i is in last position of its block
         idx = (i // bs)*bs #index of block containing byte i
         ref = enc(pad)[idx:idx+bs]
