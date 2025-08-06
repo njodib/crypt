@@ -1,7 +1,8 @@
 from Crypto.Cipher import AES
-from Utils.Padding import pkcs7, strip_pkcs7
+from Utils.Padding import pkcs7, strip_pkcs7, detect_pkcs7
 from Utils.BytesLogic import xor
 from random import randbytes
+from struct import pack
 
 def aes_ecb_encrypt(data: bytes, key: bytes, pad=True):
     cipher = AES.new(key, AES.MODE_ECB)
@@ -92,5 +93,25 @@ class AES_CBC:
             ptxt += xor(prev, dec_block)
             prev = curr_ctxt_block
 
-        if strip: return strip_pkcs7(ptxt)
+        if strip: 
+            try: detect_pkcs7
+            except: return ptxt
+            return strip_pkcs7(ptxt)
         else: return ptxt
+
+class AES_CTR:
+    def __init__(self, key, nonce):
+        self.key = key
+        self.nonce = nonce
+
+    def dec(self, s):
+        def ks():
+            ct = 0
+            cipher = AES.new(self.key, AES.MODE_ECB)
+            while True:
+                pee = pack("QQ", self.nonce, ct) #packs as little-endian 64-bit
+                ct += 1
+                yield from cipher.encrypt(pee)
+        return bytes((xb^yb) for xb,yb in zip(bytearray(s), ks()))
+
+    enc = dec

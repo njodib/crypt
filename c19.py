@@ -1,10 +1,11 @@
 # This is the manual-decryption tool described in NCC
-# Manual is fine for this!
+# Manual is fine for this! Don't think about it too much
 
 from Crypto.Cipher import AES
+from Utils.AES import AES_CTR
 from struct import pack
 from base64 import b64decode
-from random import randbytes
+from random import randbytes, randint
 from Utils.BytesLogic import xor
 
 txts = [
@@ -51,19 +52,8 @@ txts = [
 ]
 
 key = randbytes(16)
-nonce = 0
-
-def enc(msg):
-    def ks():
-        ct = 0
-        cipher = AES.new(key, AES.MODE_ECB)
-        while True:
-            pee = pack("QQ", nonce, ct) #packs as little-endian 64-bit
-            ct += 1
-            yield from cipher.encrypt(pee)
-    return bytes((xb^yb) for xb,yb in zip(bytearray(msg), ks()))
-
-ctxts = [enc(b64decode(c)) for c in txts]
+nonce = randint(0,123456)
+ctxts = [AES_CTR(key, nonce).enc(b64decode(c)) for c in txts]
 
 def keystream_from_input(ind, guess):
     p_i = guess.encode('utf-8')
@@ -84,4 +74,6 @@ if __name__ == '__main__':
 
         try:new_ind, new_guess = input("> ").split(" ", 1)
         except:continue
-        else: ind = int(new_ind)
+        else: 
+            ind = int(new_ind)
+            guess = new_guess
