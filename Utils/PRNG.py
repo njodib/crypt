@@ -17,7 +17,7 @@ class Mersenne:
     upper_mask = ((1<<w)-1) - ((1<<r)-1)
     w_mask = (1 << w) - 1
 
-    def __init__(self, seed: int = 5489, length: int = None):
+    def __init__(self, seed: int, length: int = None):
         self.x = self.seed_x(seed)
         self.index = self.n
         self.length = length
@@ -55,3 +55,15 @@ class Mersenne:
             self.x[i] = (self.x[(i+self.m)%self.n]) ^ (y>>1)
             if y%2 != 0: self.x[i] ^= self.a
         self.index = 0 #twisting resets index to 0
+    
+    def __next__(self):
+        if self.index == self.n: self.twist()
+
+        y = self.x[self.index]
+        y ^= (y>>self.u) & self.d
+        y ^= (y<<self.s) & self.b
+        y ^= (y<<self.t) & self.c
+        y ^= (y>>self.l)
+
+        self.index += 1
+        return y
