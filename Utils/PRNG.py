@@ -51,7 +51,7 @@ class MT:
     def __init__(self, seed:int=int(time()), state: list=None, length: int = None):
         if state: self.x = state
         else: self.x = get_state_from_seed(seed)
-        self.index = n
+        self.index = 0
         self.length = length
 
     def __iter__(self):
