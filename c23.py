@@ -1,5 +1,4 @@
-from random import randint
-from Utils.PRNG import Mersenne, get_state_from_seed
+from Utils.PRNG import MT
 
 # MT19937 coefficients
 (w, n, m, r) = (32, 624, 397, 31)
@@ -20,20 +19,22 @@ def distemper(y):
     for i in range(u, 32): y[i] ^= y[i - u]
     
     #bitlist to int
-    out = 0
-    for bit in y:
-        out = (out << 1) | bit
-    return out
+    res = 0
+    for bit in y: res = (res << 1) | bit
+    return res
+
+def clone_rng(rng):
+    # distemper standard cycle of 624 random numbers
+    # creates a deterministic state vector for random number generator :)
+    return iter(MT(state=[distemper(next(rng)) for _ in range(n)]))
 
 if __name__ == '__main__':
     # Create random number generator
-    rng = iter(Mersenne(get_state_from_seed(randint(0, 2**32-1))))
+    rng = MT()
 
-    # distemper 624 random numbers (standard n-cycle)
-    # these create a deterministic state vector for rng
-    cloned_rng = iter(Mersenne([distemper(next(rng)) for _ in range(n)]))
+    # Clone RNG from its output
+    clone = clone_rng(rng)
 
-    # For next 1 million results, assert that the RNGs produce similar values
-    for _ in range(10**6):
-        assert next(cloned_rng) == next(rng)
+    # Ensure clone is valid for 1 mil 'random' numbers
+    for _ in range(10**6): assert next(clone) == next(rng)
     print("SUCCESS")
