@@ -100,18 +100,20 @@ class AES_CBC:
         else: return ptxt
 
 class AES_CTR:
-    def __init__(self, key, nonce):
+    def __init__(self, key, nonce=None):
         self.key = key
-        self.nonce = nonce
+        if nonce: self.nonce = nonce
+        else: self.nonce = 0
+
+    def ks(self):
+        ct = 0
+        cipher = AES.new(self.key, AES.MODE_ECB)
+        while True:
+            pee = pack("QQ", self.nonce, ct) #packs as little-endian 64-bit
+            ct += 1
+            yield from cipher.encrypt(pee)
 
     def dec(self, s):
-        def ks():
-            ct = 0
-            cipher = AES.new(self.key, AES.MODE_ECB)
-            while True:
-                pee = pack("QQ", self.nonce, ct) #packs as little-endian 64-bit
-                ct += 1
-                yield from cipher.encrypt(pee)
-        return bytes((xb^yb) for xb,yb in zip(bytearray(s), ks()))
+        return bytes((xb^yb) for xb,yb in zip(bytearray(s), self.ks()))
 
     enc = dec
