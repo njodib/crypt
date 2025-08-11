@@ -1,9 +1,5 @@
-
-
 from random import randint, randbytes, getrandbits
-from math import ceil, log2
 from Utils.PRNG import MT
-from c02 import xor_bytes
 from time import time
 
 class MT_Cipher:

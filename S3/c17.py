@@ -6,7 +6,7 @@
 
 from random import  randbytes, choice
 from Utils.AES import AES_CBC
-from c02 import xor_bytes
+from S1.c02 import xor_bytes
 from Utils.Padding import detect_pkcs7, strip_pkcs7
 from base64 import b64decode
 
