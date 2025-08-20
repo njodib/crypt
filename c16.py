@@ -11,7 +11,8 @@ class Oracle:
         self.cipher = AES_CBC(self.key, self.iv)
 
     def encrypt(self, user_input: bytes):
-        ptxt = user_input.replace(';', '').replace('=', '').encode()
+        
+        ptxt = str(user_input).replace(';', '').replace('=', '').encode()
         ptxt = self.pre + ptxt + self.post
         ctxt = self.cipher.enc(ptxt, pad=True)
         return ctxt
