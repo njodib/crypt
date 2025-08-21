@@ -1,0 +1,7 @@
+SHA-1 Implementation
+  RFC3174 -- https://datatracker.ietf.org/doc/html/rfc3174
+  Intermediates -- https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA1.pdf
+
+SHA-1 Breaking
+  2004 -- https://www.schneier.com/blog/archives/2005/02/cryptanalysis_o.html
+  2020 -- https://eprint.iacr.org/2020/014
