@@ -1,11 +1,9 @@
 from random import randbytes
-from Utils.Hash import SHA1
-
-def secret_prefix_MAC(msg:bytes) -> bytes:
-    return SHA1(randbytes(16)+msg)
+from Utils.Hash import SHA1_MAC
 
 if __name__ == "__main__":
-    msg = b"abc"
-    for _ in range(5):
-        print(secret_prefix_MAC(msg).hex())
+    msg = b"abc" #from NIST std.
+    for i in range(5):
+        key = randbytes(16)
+        print("Test", i, "->", SHA1_MAC(msg, key).hex())
     print("SUCCESS")

@@ -7,16 +7,17 @@ import struct
 def left_rotate(num: int, shift:int):
     return ((num<<shift) | (num >>(32-shift))) & 0xffffffff
 
-def SHA1(msg: bytes):
+def SHA1(msg: bytes, h0=None, h1=None, h2=None, h3=None, h4=None, ml=None):
     #INITIAL HASH VALUES
-    h0 = 0x67452301
-    h1 = 0xEFCDAB89
-    h2 = 0x98BADCFE
-    h3 = 0x10325476
-    h4 = 0xC3D2E1F0
+    if not h0: h0= 0x67452301
+    if not h1: h1 = 0xEFCDAB89
+    if not h2: h2 = 0x98BADCFE
+    if not h3: h3 = 0x10325476
+    if not h4: h4 = 0xC3D2E1F0
 
     #PREPROCESS
-    ml = 8*len(msg)
+    if not ml: ml = 8*len(msg)
+    else: ml *= 8
     #append '1' to message
     msg += b'\x80'
     # append bits '0' until msg bit-length is congruent to -64 = 448 (mod 512)
@@ -70,6 +71,9 @@ def SHA1(msg: bytes):
     #final hash value
     hh = b''.join(struct.pack('>I', i) for i in [h0, h1, h2, h3, h4])
     return hh
+
+def SHA1_MAC(msg, key):
+    return SHA1(key + msg)
 
 '''
 test_1 = b"abc"
