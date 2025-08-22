@@ -1,7 +1,19 @@
-SHA-1 Implementation
-  RFC3174 -- https://datatracker.ietf.org/doc/html/rfc3174
-  Intermediates -- https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA1.pdf
+SHA-1
+  Specification
+    NIST -- https://csrc.nist.gov/files/pubs/fips/180-4/upd1/final/docs/fips180-4-draft-aug2014.pdf
+    NIST -- https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+  Implementation
+    NWG: RFC3174 -- https://datatracker.ietf.org/doc/html/rfc3174
+    Intermediates -- https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA1.pdf
+  Breaking
+    2004 -- https://www.schneier.com/blog/archives/2005/02/cryptanalysis_o.html
+    2020 -- https://eprint.iacr.org/2020/014
 
-SHA-1 Breaking
-  2004 -- https://www.schneier.com/blog/archives/2005/02/cryptanalysis_o.html
-  2020 -- https://eprint.iacr.org/2020/014
+MD-4
+  Specification
+    RFC1186 -- https://www.ietf.org/rfc/rfc1186.txt
+    RFC1320 (obsoletes 1186) -- https://www.ietf.org/rfc/rfc1320.txt
+  Implementation
+    Practical Cryptography -- http://www.practicalcryptography.com/hashes/md4-hash/
+
+  
