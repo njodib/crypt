@@ -16,4 +16,7 @@ MD-4
   Implementation
     Practical Cryptography -- http://www.practicalcryptography.com/hashes/md4-hash/
 
+HMAC
+  Specification
+    
   

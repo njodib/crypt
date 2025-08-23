@@ -3,6 +3,8 @@ import struct
 #import hashlib
 #from random import randint
 
+from Utils.BytesLogic import xor
+from collections.abc import Callable
 
 def left_rotate(num: int, shift:int):
     return ((num<<shift) | (num >>(32-shift))) & 0xffffffff
@@ -190,6 +192,40 @@ def MD4 (m: bytes,A=None,B=None,C=None,D=None,ml=None):
     C = C.to_bytes(4, byteorder='little')
     D = D.to_bytes(4, byteorder='little')
     return A+B+C+D
+
+
+
+class HMAC:
+    @staticmethod
+    def _compute_block_sized_key(key: bytes, hash_func: Callable[[bytes], bytes], block_size: int):
+        # Keys longer than [block_size] are shortened by hashing them
+        if len(key) > block_size:
+            key = hash_func(key)
+
+        # Keys shorter than [block_size] are padded to [block_size] by padding with zeros on the right
+        if len(key) < block_size:
+            return key + bytes(block_size - len(key))
+
+        return key
+
+    @classmethod
+    def _process(cls, key: bytes, msg: bytes, hash_func: Callable[[bytes], bytes], block_size: int):
+        # Compute the block sized key
+        block_sized_key = cls._compute_block_sized_key(key, hash_func, block_size)
+
+        # Outer & Inner padded key
+        o_key_pad = xor(block_sized_key, bytes([0x5c] * block_size))
+        i_key_pad = xor(block_sized_key, bytes([0x36] * block_size))
+
+        # calc hash
+        return hash_func(o_key_pad + hash_func(i_key_pad + msg))
+
+    @classmethod
+    def sha1(cls, key: bytes, msg: bytes):
+        hash_func = SHA1
+        block_size = 64
+        return cls._process(key=key, msg=msg, hash_func=hash_func, block_size=block_size)
+
 
 
 '''
