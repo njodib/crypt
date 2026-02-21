@@ -1,10 +1,11 @@
 from random import randint, randbytes, getrandbits
 import random
-from Utils.AES import AES_ECB, AES_CBC
+from Utils.AES import AES_ECB, AES_CBC, AES_CTR
 from Utils.Padding import PKCS7
 from base64 import b64decode
 from Crypto import Random
 from Utils.CookieParser import kv_encode
+import requests
 
 class C11_Oracle:
     def __init__(self):
@@ -102,3 +103,18 @@ class C17_Oracle:
     def valid_ctxt(self, valid_ctxt):
         ptxt = self.cipher.decrypt(valid_ctxt, False)
         return PKCS7().detect_padding(ptxt)
+
+'''
+CHALLENGE 25
+'''
+class C25_Oracle:
+    def __init__(self):
+        self.key = randbytes(16)
+        self.cipher = AES_CTR(self.key)
+        URL = "https://www.cryptopals.com/static/challenge-data/25.txt"
+        ptxt = AES_ECB(b"YELLOW SUBMARINE").decrypt(b64decode(requests.get(URL).text))
+        self.ctxt = self.cipher.encrypt(ptxt)
+
+    def edit(self, offset: int, newtext: bytes):  
+        gg = bytes([a^b for a,b in zip(self.cipher.keystream(), newtext)])
+        return self.ctxt[:offset] + gg + self.ctxt[offset+len(gg):]  
