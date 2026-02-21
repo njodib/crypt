@@ -118,3 +118,22 @@ class C25_Oracle:
     def edit(self, offset: int, newtext: bytes):  
         gg = bytes([a^b for a,b in zip(self.cipher.keystream(), newtext)])
         return self.ctxt[:offset] + gg + self.ctxt[offset+len(gg):]  
+
+'''
+CHALLENGE 26
+'''
+class C26_Oracle:
+    def __init__(self):
+        self.key = randbytes(16)
+        self.ctr_obj = AES_CTR(self.key)
+
+    def encode(self, plaintext: bytes) -> bytes:
+        prefix = b"comment1=cooking%20MCs;userdata="
+        suffix = b";comment2=%20like%20a%20pound%20of%20bacon"
+        plaintext = plaintext.replace(b";", b"").replace(b"=", b"")
+        ciphertext = self.ctr_obj.encrypt(prefix + plaintext + suffix)
+        return ciphertext
+
+    def parse(self, ciphertext: bytes) -> bool:
+        decrypted = self.ctr_obj.decrypt(ciphertext)
+        return b';admin=true;' in decrypted
