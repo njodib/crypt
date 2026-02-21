@@ -137,3 +137,24 @@ class C26_Oracle:
     def parse(self, ciphertext: bytes) -> bool:
         decrypted = self.ctr_obj.decrypt(ciphertext)
         return b';admin=true;' in decrypted
+
+'''
+CHALLENGE 27
+'''
+class C27_Oracle:
+    def __init__(self):
+        self.key = randbytes(16)
+        self.nonce = self.key
+        self.cipher = AES_CBC(self.key, self.nonce)
+
+    def encode(self, plaintext: bytes) -> bytes:
+        prefix = b"comment1=cooking%20MCs;userdata="
+        suffix = b";comment2=%20like%20a%20pound%20of%20bacon"
+        ptxt = prefix + plaintext.replace(b";", b"").replace(b"=", b"") + suffix
+        return self.cipher.encrypt(ptxt)
+
+    def parse(self, ciphertext: bytes) -> bool:
+        decrypted = self.cipher.decrypt(ciphertext)
+        try: decoded = decrypted.decode('ascii')
+        except UnicodeDecodeError: raise ValueError('Illegal characters', decrypted)
+        return ';admin=true;' in decoded
