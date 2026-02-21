@@ -1,4 +1,5 @@
 from Utils.PRNG import MT
+import random
 
 # MT19937 coefficients
 (w, n, m, r) = (32, 624, 397, 31)
@@ -23,18 +24,19 @@ def distemper(y):
     for bit in y: res = (res << 1) | bit
     return res
 
-def clone_rng(rng):
+def clone_rng(randoms):
     # distemper standard cycle of 624 random numbers
     # creates a deterministic state vector for random number generator :)
-    return iter(MT(state=[distemper(next(rng)) for _ in range(n)]))
+    return iter(MT(state=[distemper(r) for r in randoms]))
 
 if __name__ == '__main__':
-    # Create random number generator
-    rng = MT()
+    randoms = [random.getrandbits(32) for _ in range(624)]
 
     # Clone RNG from its output
-    clone = clone_rng(rng)
+    clone = clone_rng(randoms)
+    
+    print(next(clone), random.getrandbits(32))
 
     # Ensure clone is valid for 1 mil 'random' numbers
-    for _ in range(10**6): assert next(clone) == next(rng)
+    for _ in range(10**6): assert next(clone) == random.getrandbits(32)
     print("SUCCESS")

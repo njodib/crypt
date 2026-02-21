@@ -1,13 +1,12 @@
-from random import randint, randbytes, getrandbits
+from random import randint, randbytes
 from Utils.PRNG import MT
 from time import time
+from base64 import b64decode, b64encode
 
 class MT_Cipher:
     def __init__(self, seed:int=int(time())):
         #assert seed <= (2<<16) - 1
         self.rng = MT(seed=seed)
-
-    seed:int=int(time())
 
     #stream of random bytes from MT 19937
     def byte_stream(self):
@@ -16,17 +15,13 @@ class MT_Cipher:
         for num in self.rng:
             yield from num.to_bytes(4)
     
-    def enc(self, ptxt: bytes) -> bytes:
+    def encrypt(self, ptxt: bytes) -> bytes:
         #prepend random bytes before ptxt and encrypt
         ptxt = randbytes(randint(5,15)) + ptxt
         return bytes([ x^y for (x,y) in zip(ptxt, self.byte_stream())])
 
-
-    def dec(self, ctxt: bytes) -> bytes:
+    def decrypt(self, ctxt: bytes) -> bytes:
         return bytes([ x^y for (x,y) in zip(ctxt, self.byte_stream())])
-
-
-
 
 # make a 16 character password reset token
 def make_token(seed:int=int(time())):
@@ -42,21 +37,19 @@ def token_from_MT(token):
         if guess == token: return True
     else: return False
 
-
 def break_MT_cipher(ciphertext: bytes, known_plaintext: bytes) -> int:
     """ Brute force all 16-bit seed possibilities"""
     for seed in range(2**16):
         cipher_obj = MT_Cipher(seed=seed)
-        decryption = cipher_obj.dec(ciphertext)
+        decryption = cipher_obj.decrypt(ciphertext)
         if known_plaintext in decryption:
             return seed
-
 
 if __name__ == '__main__':
     # BREAK MT19937 CIPHER
     real_seed = randint(0,(1<<16)-1)
     ptxt = b'A'*14
-    ctxt = MT_Cipher(seed=real_seed).enc(ptxt)
+    ctxt = MT_Cipher(seed=real_seed).encrypt(ptxt)
     print("Breaking 16-bit MT19937 cipher")
     detected_seed = break_MT_cipher(ctxt, ptxt)
     assert detected_seed == real_seed
