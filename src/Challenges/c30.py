@@ -1,17 +1,9 @@
 import struct
 from Utils.Hash import MD4
-from random import randbytes
-
-class Oracle:
-    def __init__(self):
-        self.key = randbytes(16)
-
-    def hash(self, msg):
-        return MD4(self.key + msg)
+from Utils.Oracles import C30_Oracle
 
 def test_MD4():
     # From RFC 1320 Appendix 5 -- Test suite
-
     '''
     A.5 Test suite
 
@@ -74,19 +66,16 @@ def forge_MD4_MAC(z:bytes,h:bytes,l:int)->bytes:
     
     return MD4(z,A,B,C,D,l)
 
-if __name__ == "__main__":
-    #test_MD4() #if it doesn't throw exception it works
-    
+if __name__ == "__main__":    
     puta = MD4(b"abc")
     A,B,C,D = [struct.unpack('<I', puta[i:i+4])[0] for i in range(0,16,4)]
-
 
     m = b"comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon"
     z = b";admin=true;"
     k=16
 
     p = md_padding(k+len(m))
-    orc=Oracle()
+    orc=C30_Oracle()
     h = orc.hash(m)
 
     #illegal input allowed by oracle for validating test

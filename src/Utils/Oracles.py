@@ -6,6 +6,7 @@ from base64 import b64decode
 from Crypto import Random
 from Utils.CookieParser import kv_encode
 import requests
+from Utils.Hash import SHA1_MAC, MD4_MAC
 
 class C11_Oracle:
     def __init__(self):
@@ -158,3 +159,23 @@ class C27_Oracle:
         try: decoded = decrypted.decode('ascii')
         except UnicodeDecodeError: raise ValueError('Illegal characters', decrypted)
         return ';admin=true;' in decoded
+
+'''
+CHALLENGE 29
+'''   
+class C29_Oracle:
+    def __init__(self):
+        self.key = randbytes(16)
+
+    def hash(self, msg):
+        return SHA1_MAC(msg, self.key)
+
+'''
+CHALLENGE 30
+'''
+class C30_Oracle:
+    def __init__(self):
+        self.key = randbytes(16)
+
+    def hash(self, msg):
+        return MD4_MAC(msg, self.key)

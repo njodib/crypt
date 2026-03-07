@@ -193,7 +193,8 @@ def MD4 (m: bytes,A=None,B=None,C=None,D=None,ml=None):
     D = D.to_bytes(4, byteorder='little')
     return A+B+C+D
 
-
+def MD4_MAC(msg, key):
+    return MD4(key + msg)
 
 class HMAC:
     @staticmethod
