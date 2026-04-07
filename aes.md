@@ -1,6 +1,6 @@
 
 
-## Challenge 7
+## Challenge 7: AES in ECB mode
 
 **AES**
 
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     print("SUCCESS")
 ```
 
-## Challenge 8
+## Challenge 8: Detect AES in ECB mode
 Notice that 16-byte blocks of plaintext always produce the same 16-byte blocks of ciphertext.
 
 ```
@@ -89,12 +89,16 @@ if __name__ == "__main__":
 
 Notice our **blockify** helper function. This comes in handy pretty frequently for block ciphers :)
 
-## Challenge 9
+## Challenge 9: Implement PKCS#7
+
 Because of AES's method of 'block' encryption, we can only encrypt plaintext in 16-byte chunks. If our plaintext is not a multiple of 16 bytes, we must pad it accordingly. The current standard is **PKCS #7**, which is standardized in [RFC 5652](https://datatracker.ietf.org/doc/html/rfc5652#section-1).
 
 PKCS#7 padding adds N bytes, ensuring that the total length is a multiple of block_size. The value of each added byte is equal to N.
 
 **Note:** If the length of the original data is an integer multiple of the block size B, then an extra block of bytes with value B is added. This is necessary so the deciphering algorithm can determine with certainty whether the last byte of the last block is a pad byte indicating the number of padding bytes added or part of the plaintext message. [[wikipedia]](https://en.wikipedia.org/wiki/Padding_(cryptography)#PKCS#5_and_PKCS#7)
+
+Overall, this gives padding formula: $ p=k-L(mod(k)) $
+Where k is blocksize, L is message length.
 
 We implement PKCS#7 padding
 
@@ -118,7 +122,7 @@ if __name__ == "__main__":
     assert padded == b'YELLOW SUBMARINE\x04\x04\x04\x04'
 ```
 
-## Challenge 10
+## Challenge 10: Implement CBC mode
 
 This challenge implements the CBC mode for AES cipher where ciphertext blocks are propagated through plaintext blocks with the XOR function.
 
@@ -135,7 +139,7 @@ $$
 \end{align*}
 $$
 
-**Notice:** The XOR prevents the problem of repeated 16-byte blocks.
+**Note:** The XOR prevents the problem of repeated 16-byte blocks.
 
 Further references for ECB mode and CBC mode (among others) can be found in NIST's [Recommendation for Block Cipher Modes of Operation: *Methods and Techniques*](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf).
 
@@ -270,10 +274,12 @@ Play that funky music
 ```
 
 
-## Challenge 11
-Here, I begin a separate file for oracles.
+## Challenge 11: An ECB/CBC detection oracle
+From here, I began a separate file for oracles. Most problems after this consist of 
+1. Creating an insecure system
+2. Prove system vulnerability by deciphering a secret text
 
-If everything is set up correctly from the previous challenges this should be pretty straightforward.
+If everything is set up correctly from the previous challenges this oracle should be pretty straightforward.
 
 ```python
 from random import randint, randbytes, getrandbits
@@ -303,7 +309,7 @@ class C11_Oracle:
         return self.mode
 ```
 
-Although we don't know the alignment for the 16-byte buffer, if we pass in a string of repeated characters, we can eventually expect repeated blocks in ECB mode. Notice how this repeats logic from Challenge 8 of finding repeated blocks to "detect ECB encryption". 
+Remember from Challenge 8, we detected ECB mode through repeated blocks of plaintext. "detect ECB encryption". 
 
 ```python
 from c08 import blockify
@@ -452,116 +458,266 @@ if __name__ == "__main__":
     ptxt = crack_ECB(enc, bs)
     print(ptxt.decode('utf-8'))
 ```
-## Challenge 13
-Python implementation:
-```python
-from random import randbytes
-from Utils.Padding import pkcs7, strip_pkcs7
-from Utils.AES import AES_ECB
-from c08 import blockify
-from c12 import detect_blocksize
 
-def detect_msg_length(oracle) -> int:
-    block_size = detect_blocksize(oracle)
-    base_len = len(oracle(b''))
-    for i in range(block_size+1):
-        tmp_len = len(oracle(b'A'*i))
-        if tmp_len > base_len:
-            return base_len - i
+## Challenge 13 — ECB Cut-and-Paste Attack
 
-def get_injection_block(oracle):
-    #find injection block by determining the first block which changes when 1 byte is added
-    a = blockify(oracle(b""))
-    b = blockify(oracle(b"A"))
-    inj = 0
-    while a[inj] == b[inj]: inj += 1
-    return inj
+### Oracle
 
-def get_prefix_size(oracle):
-    block_size = detect_blocksize(oracle)
-    inj = get_injection_block(oracle)
+Our oracle encrypts structured cookie strings:
 
-    #When injection block is filled with padding, it stops changing
-    inj_pad = 0
-    while True:
-        inj_short = blockify(oracle(b"A"*inj_pad))[inj]
-        inj_long = blockify(oracle(b"A"*(inj_pad+1)))[inj]
-        if inj_short == inj_long:
-            break
-        inj_pad += 1
-    prefix_length = (inj * block_size) + (block_size - inj_pad)
-    return prefix_length
-
-def get_postfix_size(oracle):
-    bs = detect_blocksize(oracle)
-    pref = get_prefix_size(oracle)
-    msg = detect_msg_length(oracle)
-    end_padding = bs - (msg % bs)
-    post = len(oracle(b"")) - pref - end_padding
-    return post
-
-class Profile:
-    def __init__(self):
-        self.key = randbytes(16)
-        self.user = {}
-        self.blocksize = 16
-        self.cipher = AES_ECB(self.key)
-    
-    @staticmethod
-    def kv_parse(cookie:bytes) -> dict:
-        s = cookie.decode('utf-8')
-        return dict(pair.split('=') for pair in s.split('&'))
-
-    @staticmethod
-    def profile_for(email: bytes) -> bytes:
-        if b'&' in email or b'=' in email: raise ValueError("Invalid")
-        email = email.replace(b'&', b'').replace(b'=', b'')
-        return b'email='+email+b'&uid=10&role=user'
-
-    #Email -> Update profile -> Return ciphertext
-    def enc(self, email: str) -> bytes:
-        profile = self.profile_for(email)
-        padded_profile = pkcs7(profile, self.blocksize)
-        ctxt = self.cipher.enc(padded_profile)
-        return ctxt
-
-        #return str(pkcs7(AES_ECB(self.key), self.blocksize).enc(profile))
-
-    #Encrypted profile
-    def dec(self, ctxt: bytes):
-        ptxt = strip_pkcs7(AES_ECB(self.key).dec(ctxt))
-        return self.kv_parse(ptxt)
-
-# U could just inspect the cookie too.
-# But this code generalizes to any cookie
-if __name__ == "__main__":
-    # Define the encryption oracle
-    prof = Profile()
-    oracle = prof.enc
-
-    # Encryption information from oracle
-    bs = detect_blocksize(oracle)
-    msg_len = detect_msg_length(oracle)
-    inj = get_injection_block(oracle)
-    pre = get_prefix_size(oracle)
-    post = get_postfix_size(oracle)
-
-    # Fill the injection block with Xs
-    # Encrypt padded 'admin' block
-    fake_email_len = ((inj+1)*16)-pre
-    fake_email = (b'X'*fake_email_len) + pkcs7(b'admin', bs)
-    admin_ctxt = oracle(fake_email)[(inj+1)*bs:(inj+2)*bs]
-
-    # Align 'user' to last block.
-    # Replace this with the padded 'admin' block
-    admin_email_len = bs - ((len(prof.profile_for(b''))-len('user'))%bs)
-    admin_email = b"X"*admin_email_len #Any 13 char email
-    ctxt = oracle(admin_email)[:-bs] + admin_ctxt
-
-    # Test and print
-    dec = prof.dec(ctxt)
-    print(dec)
-    assert dec['role'] == 'admin'
+```
+[email]=foo@bar.com&uid=10&role=user
 ```
 
- 
+We create on oracle which takes an email and returns the cookie.
+
+```python
+class C13_Oracle:
+    def __init__(self):
+        self.cipher = AES_ECB(Random.new().read(16))
+
+    def encrypt(self, email):
+        email = email.replace('&', '').replace('=', '')
+        d = {
+            'email': email,
+            'uid': 10,
+            'role': 'user'
+        }
+        return self.cipher.encrypt(kv_encode(d).encode())
+
+    def decrypt(self, ctxt):
+        return self.cipher.decrypt(ctxt)
+```
+
+### Method
+
+**AES-ECB** encrypts each 16-byte block *independently*:
+
+$$
+C_i = AES_K(P_i)
+$$
+
+Because blocks have no dependency on one another, an attacker can **rearrange, duplicate, or splice ciphertext blocks** freely. 
+
+#### Carve out an `admin` block
+
+We need a ciphertext block which decrypts to:
+
+```
+admin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b
+```
+
+(the word `admin` followed by 11 bytes of PKCS#7 padding, since `16 - 5 = 11`)
+
+The oracle always prepends `email=` (6 bytes). To push `admin...` into a clean block boundary, we pad with:
+
+```
+prefix_len = 16 - len("email=") = 10
+```
+
+So the email input is:
+
+```
+email = ('X' * 10) + "admin" + (\x0b * 11)
+```
+
+The resulting plaintext blocks are:
+
+| Block 1 (bytes 0–15)   | Block 2 (bytes 16–31)                    | Block 3 (bytes 32–47) |
+|------------------------|-------------------------------------------|-----------------------|
+| `email=XXXXXXXXXX`     | `admin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b` | `&uid=10&role=user`   |
+
+Block 2 of `ctxt1` is our target — it's an encrypted `admin` block with valid padding.
+
+#### Get a ciphertext with `role=` at a block boundary
+
+We need:
+
+```
+email=goop@goop.   |   com&uid=10&role=   |   user\x0c*12
+```
+
+The email `goop@goop.com` (13 chars) satisfies:
+
+```
+len("email=") + 13 = 19 ≡ 3 (mod 16)
+```
+
+So `role=` falls exactly at byte 32 — the start of block 3. Block 3 of `ctxt2` would normally encrypt `user\x0c...`, but we can **replace it**.
+
+#### Splice
+
+```
+forged_ctxt = ctxt2[0:32]  +  ctxt1[16:32]
+```
+
+This assembles:
+
+| Block 1 | Block 2 | Block 3 |
+|---------|---------|---------|
+| `email=goop@goop.` | `com&uid=10&role=` | `admin\x0b...\x0b` ← spliced in |
+
+Decryption yields a valid `role=admin` cookie.
+
+### Formula Summary
+
+Let `b = 16` (blocksize), `p = len("email=") = 6`.
+
+```
+prefix_pad = b - p = 10        # bytes needed before "admin"
+suffix_pad = b - len("admin") = 11   # PKCS#7 padding value
+
+forged = encrypt("X"*10 + "admin" + "\x0b"*11)[b:2b]   # the admin block
+base   = encrypt("goop@goop.com")[:2b]                  # blocks 1–2 with role= at boundary
+
+result = base + forged
+```
+
+---
+
+## Challenge 14 — Harder ECB Byte-at-a-Time Decryption
+
+### Oracle
+
+The oracle now prepends a **random-length random prefix** before the attacker-controlled input and a secret suffix:
+
+```
+encrypt(random_prefix || attacker_input || secret_suffix)
+```
+
+The goal is to recover `secret_suffix` one byte at a time.
+
+### Method
+
+In challenge 12, the oracle had no prefix. Here, the prefix complicates block alignment, but the fundamental attack is the same.
+
+If you can align the secret suffix to a known block boundary, you can recover it one byte at a time by:
+
+* Creating a dictionary which maps all 256 possible last bytes to their corresponding block.
+* Observing which dictionary entry's ciphertext matches the real output.
+
+### Prefix
+
+Let `r = len(random_prefix)`. We don't know `r`, but `detect_prefix_length()` finds it by:
+- Encrypting increasing lengths of identical bytes until a duplicate block appears (ECB produces identical ciphertext for identical plaintext blocks).
+- The number of padding bytes needed to produce that duplication tells us `r mod b`.
+- The block index of the duplicate reveals how many full blocks the prefix occupies.
+
+Once `r` is known:
+
+```
+prefix_padding = (-r) mod b        # bytes to align prefix to a block boundary
+offset = r + prefix_padding        # total bytes before our controlled region
+```
+
+We then prepend `prefix_padding` filler bytes to every oracle call, effectively eliminating the prefix from our attack surface.
+
+### Byte-at-a-time recovery
+
+For each target byte at index `i` in the secret suffix:
+
+```
+known_bytes = already recovered bytes
+pad_len = (b - 1 - i) mod b       # shrink controlled input by 1 each round
+
+# Dictionary phase: for each candidate byte c in 0..255:
+query = prefix_padding + pad_input + known_bytes + [c]
+dict[encrypt(query)[target_block]] = c
+
+# Oracle phase:
+real_ctxt = oracle(prefix_padding + pad_input)
+recovered_byte = dict[real_ctxt[target_block]]
+```
+
+This is repeated until the full suffix is recovered.
+
+---
+
+## Challenge 15 — PKCS#7 Padding Validation
+
+### Valid padding formula
+
+Given a plaintext block `P` of length `L`, padding is valid if and only if:
+
+```
+n = P[-1]                          # last byte value
+1 ≤ n ≤ blocksize
+P[-n:] == bytes([n] * n)          # last n bytes all equal n
+```
+
+
+## Challenge 16 — CBC Bit-Flipping Attack
+
+### What's being attacked
+
+An oracle encrypts:
+
+```
+"comment1=cooking%20MCs;userdata=" + user_input + ";comment2=..."
+```
+
+It sanitizes `;` and `=` from `user_input`. The goal is to produce a ciphertext that decrypts to something containing `;admin=true`.
+
+### Method
+
+**AES-CBC** decrypts as:
+
+```
+P_i = AES_K(C_i) XOR C_{i-1}
+```
+
+This means flipping a bit in ciphertext block `C_{i-1}` causes a **predictable, controlled flip** in the corresponding bit of plaintext block `P_i` (at the cost of completely garbling `P_{i-1}`).
+
+### Oracle Attack
+
+#### Identify the prefix
+
+```
+prefix = b"comment1=cooking%20MCs;userdata="   # 32 bytes = exactly 2 blocks
+```
+
+Because the prefix is exactly 2 blocks, no extra padding is needed. Our input starts at block 3 (byte offset 32).
+
+#### Submit a crafted plaintext
+
+Instead of `;admin=true` (which gets sanitized), submit:
+
+```
+?????9admin9true
+```
+
+where `9` is used as a stand-in for `;` and `=` (they share no bits).
+
+After encryption, this plaintext occupies block 3 (bytes 32–47) of the ciphertext.
+
+#### Flip bits in the preceding ciphertext block
+
+To turn `9` (ASCII `0x39`) into `;` (ASCII `0x3B`) in the decrypted output, XOR the corresponding byte in block 2 of the ciphertext:
+
+```
+C'[i] = C[i] XOR ord('9') XOR ord(';')
+```
+
+The general formula for a single-byte flip targeting plaintext position `i` in block `n`:
+
+```
+C'[offset] = C[offset] XOR (current_char XOR desired_char)
+```
+
+where `offset = (n-1)*blocksize + byte_index_within_block`.
+
+#### Assemble the forged ciphertext
+
+The code computes:
+
+``` python
+l = prefix_length + prefix_padding   # = 32 (already aligned)
+
+forged = ctxt[:l-11]
+       + (ctxt[l-11] ^ ord('9') ^ ord(';'))    # flip '9' → ';'
+       + ctxt[l-10 : l-5]
+       + (ctxt[l-5]  ^ ord('9') ^ ord('='))    # flip '9' → '='
+       + ctxt[l-4:]
+```
+
+Block 2 of the ciphertext is garbled upon decryption (accepted collateral damage), but block 3 decrypts to `;admin=true`.

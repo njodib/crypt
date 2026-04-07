@@ -1,6 +1,3 @@
-from Utils.Cipher import AES_ECB
-from Crypto import Random
-from Crypto.Cipher import AES
 from Utils.CookieParser import kv_encode, kv_decode
 from Utils.Oracles import C13_Oracle
 
@@ -31,5 +28,5 @@ def ecb_cut_and_paste(encryption_oracle):
 if __name__ == "__main__":
     oracle = C13_Oracle()
     ctxt_admin = ecb_cut_and_paste(oracle)
-    print(ctxt_admin)
+    print("CIPHERTEXT:", ctxt_admin.hex())
     print(kv_decode(oracle.decrypt(ctxt_admin).decode()))

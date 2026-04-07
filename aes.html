@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Challenge 7&colon; AES in ECB mode</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h2 id="challenge-7-aes-in-ecb-mode">Challenge 7: AES in ECB mode</h2>
+<p><strong>AES</strong></p>
+<p>The full algorithm for AES (Advanced Encryption Standard) is specified by the <a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197-upd1.pdf">NIST</a>.</p>
+<p>If you are working in command line, it may be easiest to use the suggested <a href="https://docs.openssl.org/3.0/man1/openssl-ciphers/#aes-cipher-suites-from-rfc3268-extending-tls-v10">OpenSSL Library</a>. However, I use the <a href="https://pycryptodome.readthedocs.io/en/latest/src/cipher/aes.html">pycryptodome library</a> for a python implementation of AES.</p>
+<p>For these next challenges, I build out an AES class inside my Utils folder.</p>
+<p><strong>AES ECB Implementation</strong></p>
+<pre><code class="language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">AES_ECB</span>:
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self, key</span>):
+        self.key = key
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">enc</span>(<span class="hljs-params">self, ptxt: <span class="hljs-built_in">bytes</span></span>) -&gt; <span class="hljs-built_in">bytes</span>:
+        cipher = AES.new(self.key, AES.MODE_ECB)
+        <span class="hljs-keyword">return</span> cipher.encrypt(ptxt, AES.block_size)
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">dec</span>(<span class="hljs-params">self, ctxt: <span class="hljs-built_in">bytes</span></span>) -&gt; <span class="hljs-built_in">bytes</span>:
+        cipher = AES.new(self.key, AES.MODE_ECB)
+        <span class="hljs-keyword">return</span> cipher.decrypt(ctxt)
+</code></pre>
+<p>For this challenge:</p>
+<ol>
+<li>Make a request to the <a href="https://www.cryptopals.com/static/challenge-data/7.txt">txt</a> file</li>
+<li>Decode the base64 text into ciphertext bytes</li>
+<li>Decrypt the ciphertext bytes into plaintext</li>
+<li>Test decryption by re-encrypting the plaintext. If it's valid, it should return the same ciphertext</li>
+</ol>
+<pre><code class="language-python"><span class="hljs-keyword">from</span> base64 <span class="hljs-keyword">import</span> b64decode
+<span class="hljs-keyword">from</span> Utils.AES <span class="hljs-keyword">import</span> AES_ECB
+<span class="hljs-keyword">import</span> requests
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    <span class="hljs-comment"># 1. Save ciphertext</span>
+    URL = <span class="hljs-string">&quot;https://www.cryptopals.com/static/challenge-data/7.txt&quot;</span>
+    ctxt_encoded = requests.get(URL).text
+    
+    <span class="hljs-comment"># 2. Transform the base64 ciphertext string into bytes</span>
+    ctxt = b64decode(ctxt_encoded)
+
+    <span class="hljs-comment"># 3. Decrypt ciphertext with AES ECB using the known key</span>
+    KEY = <span class="hljs-string">b&quot;YELLOW SUBMARINE&quot;</span>
+    cipher = AES_ECB(KEY)
+    ptxt = cipher.dec(ctxt)
+    <span class="hljs-built_in">print</span>(ptxt.decode(<span class="hljs-string">&#x27;utf-8&#x27;</span>))
+
+    <span class="hljs-comment"># 4. Test: re-encrypt plaintext and compare to ciphertext</span>
+    <span class="hljs-keyword">assert</span> cipher.enc(ptxt) == ctxt
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;SUCCESS&quot;</span>)
+</code></pre>
+<h2 id="challenge-8-detect-aes-in-ecb-mode">Challenge 8: Detect AES in ECB mode</h2>
+<p>Notice that 16-byte blocks of plaintext always produce the same 16-byte blocks of ciphertext.</p>
+<pre><code>Plaintext Block:  &quot;As a result of t&quot;...
+Ciphertext Block: &quot;C9D9C44365EA33B1C0BEA01447A46EBF&quot;...
+</code></pre>
+<p>For long English text, we expect repeated phrases to eventually align in the 16-byte buffer.</p>
+<pre><code class="language-python"><span class="hljs-keyword">import</span> requests
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">blockify</span>(<span class="hljs-params">data: <span class="hljs-built_in">bytes</span>, bs: <span class="hljs-built_in">int</span>=<span class="hljs-number">16</span></span>):
+    <span class="hljs-keyword">return</span> [data[i:i+bs] <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">0</span>,<span class="hljs-built_in">len</span>(data),bs)]
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    <span class="hljs-comment"># 1. Save ciphertext</span>
+    URL = <span class="hljs-string">&quot;https://www.cryptopals.com/static/challenge-data/8.txt&quot;</span>
+    ctxt_str = requests.get(URL).text
+    
+    <span class="hljs-comment"># 2. Iterate through lines, splitting into 16 byte blocks</span>
+    <span class="hljs-keyword">for</span> i, ctxt_line <span class="hljs-keyword">in</span> <span class="hljs-built_in">enumerate</span>(ctxt_str.splitlines(),<span class="hljs-number">1</span>):
+        ctxt = <span class="hljs-built_in">bytes</span>.fromhex(ctxt_line)
+        blocks = blockify(ctxt,<span class="hljs-number">16</span>)
+        
+        <span class="hljs-comment"># 3. Return line containing duplicate blocks.</span>
+        <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(<span class="hljs-built_in">set</span>(blocks)) &lt; <span class="hljs-built_in">len</span>(blocks):
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Found ECB encryption in line&quot;</span>, i)
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Ciphertext:&quot;</span>, ctxt_line)
+</code></pre>
+<p>Notice our <strong>blockify</strong> helper function. This comes in handy pretty frequently for block ciphers :)</p>
+<h2 id="challenge-9-implement-pkcs7">Challenge 9: Implement PKCS#7</h2>
+<p>Because of AES's method of 'block' encryption, we can only encrypt plaintext in 16-byte chunks. If our plaintext is not a multiple of 16 bytes, we must pad it accordingly. The current standard is <strong>PKCS #7</strong>, which is standardized in <a href="https://datatracker.ietf.org/doc/html/rfc5652#section-1">RFC 5652</a>.</p>
+<p>PKCS#7 padding adds N bytes, ensuring that the total length is a multiple of block_size. The value of each added byte is equal to N.</p>
+<p><strong>Note:</strong> If the length of the original data is an integer multiple of the block size B, then an extra block of bytes with value B is added. This is necessary so the deciphering algorithm can determine with certainty whether the last byte of the last block is a pad byte indicating the number of padding bytes added or part of the plaintext message. <a href="https://en.wikipedia.org/wiki/Padding_(cryptography)#PKCS#5_and_PKCS#7">[wikipedia]</a></p>
+<p>Overall, this gives padding formula: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>=</mo><mi>k</mi><mo>−</mo><mi>L</mi><mo stretchy="false">(</mo><mi>m</mi><mi>o</mi><mi>d</mi><mo stretchy="false">(</mo><mi>k</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex"> p=k-L(mod(k)) </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">L</span><span class="mopen">(</span><span class="mord mathnormal">m</span><span class="mord mathnormal">o</span><span class="mord mathnormal">d</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.03148em;">k</span><span class="mclose">))</span></span></span></span>
+Where k is blocksize, L is message length.</p>
+<p>We implement PKCS#7 padding</p>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">pkcs7</span>(<span class="hljs-params">txt: <span class="hljs-built_in">bytes</span>, block_size: <span class="hljs-built_in">int</span> = <span class="hljs-number">16</span></span>) -&gt; <span class="hljs-built_in">bytes</span>:
+    pad = block_size - (<span class="hljs-built_in">len</span>(txt) % block_size)
+    <span class="hljs-keyword">return</span> txt + <span class="hljs-built_in">bytes</span>([pad] * pad)
+</code></pre>
+<p>And complete the challenge</p>
+<pre><code class="language-python"><span class="hljs-keyword">from</span> Utils.Padding <span class="hljs-keyword">import</span> pkcs7
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    <span class="hljs-comment"># 1. Return padded data</span>
+    padded = pkcs7(<span class="hljs-string">b&quot;YELLOW SUBMARINE&quot;</span>, <span class="hljs-number">20</span>)
+    <span class="hljs-built_in">print</span>(padded)
+
+    <span class="hljs-comment"># 2. Test</span>
+    <span class="hljs-keyword">assert</span> padded == <span class="hljs-string">b&#x27;YELLOW SUBMARINE\x04\x04\x04\x04&#x27;</span>
+</code></pre>
+<h2 id="challenge-10-implement-cbc-mode">Challenge 10: Implement CBC mode</h2>
+<p>This challenge implements the CBC mode for AES cipher where ciphertext blocks are propagated through plaintext blocks with the XOR function.</p>
+<p><strong>Equations for encryption and decryption:</strong></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable rowspacing="0.25em" columnalign="right left right left right left" columnspacing="0em 1em 0em 1em 0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>ECB Encryption: </mtext></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><msub><mi>C</mi><mi>j</mi></msub><mo>=</mo><mi>C</mi><mi>I</mi><mi>P</mi><msub><mi>H</mi><mi>k</mi></msub><mo stretchy="false">(</mo><msub><mi>P</mi><mi>j</mi></msub><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>for </mtext><mi>j</mi><mo>=</mo><mn>1</mn><mo>…</mo><mi>n</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>ECB Decryption: </mtext></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><msub><mi>P</mi><mi>j</mi></msub><mo>=</mo><mi>C</mi><mi>I</mi><mi>P</mi><msubsup><mi>H</mi><mi>k</mi><mrow><mo>−</mo><mn>1</mn></mrow></msubsup><mo stretchy="false">(</mo><msub><mi>C</mi><mi>j</mi></msub><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>for </mtext><mi>j</mi><mo>=</mo><mn>1</mn><mo>…</mo><mi>n</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>CBC Encryption: </mtext></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><msub><mi>C</mi><mn>1</mn></msub><mo>=</mo><mi>C</mi><mi>I</mi><mi>P</mi><msub><mi>H</mi><mi>k</mi></msub><mo stretchy="false">(</mo><msub><mi>P</mi><mi>j</mi></msub><mo>⊕</mo><mi>I</mi><mi>V</mi><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><msub><mi>C</mi><mi>j</mi></msub><mo>=</mo><mi>C</mi><mi>I</mi><mi>P</mi><msub><mi>H</mi><mi>k</mi></msub><mo stretchy="false">(</mo><msub><mi>P</mi><mi>j</mi></msub><mo>⊕</mo><msub><mi>C</mi><mrow><mi>j</mi><mo>−</mo><mn>1</mn></mrow></msub><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>for </mtext><mi>j</mi><mo>=</mo><mn>2</mn><mo>…</mo><mi>n</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>CBC Decryption: </mtext></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><msub><mi>P</mi><mn>1</mn></msub><mo>=</mo><mi>C</mi><mi>I</mi><mi>P</mi><msubsup><mi>H</mi><mi>k</mi><mrow><mo>−</mo><mn>1</mn></mrow></msubsup><mo stretchy="false">(</mo><msub><mi>C</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>⊕</mo><mi>I</mi><mi>V</mi></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><msub><mi>P</mi><mi>j</mi></msub><mo>=</mo><mi>C</mi><mi>I</mi><mi>P</mi><msubsup><mi>H</mi><mi>k</mi><mrow><mo>−</mo><mn>1</mn></mrow></msubsup><mo stretchy="false">(</mo><msub><mi>C</mi><mn>1</mn></msub><mo stretchy="false">)</mo><mo>⊕</mo><msub><mi>C</mi><mrow><mi>j</mi><mo>−</mo><mn>1</mn></mrow></msub></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mtext>for </mtext><mi>j</mi><mo>=</mo><mn>2</mn><mo>…</mo><mi>n</mi></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align*}
+    &amp;\text{ECB Encryption: }   &amp;&amp; C_j = CIPH_k(P_j) &amp;&amp; \text{for }j = 1\dots n\\
+    &amp;\text{ECB Decryption: }   &amp;&amp; P_j= CIPH_k^{-1}(C_j) &amp;&amp; \text{for }j = 1\dots n\\ 
+     \\
+    &amp;\text{CBC Encryption: }   &amp;&amp; C_1 = CIPH_k(P_j\oplus IV) &amp;&amp; \\
+    &amp; &amp;&amp; C_j = CIPH_k(P_j\oplus C_{j-1}) &amp;&amp; \text{for }j = 2\dots n\\
+    &amp;\text{CBC Decryption: }   &amp;&amp; P_1= CIPH_k^{-1}(C_1)\oplus IV &amp;&amp; \\
+    &amp; &amp;&amp; P_j= CIPH_k^{-1}(C_1)\oplus C_{j-1} &amp;&amp; \text{for }j = 2\dots n\\
+\end{align*}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:10.5723em;vertical-align:-5.0362em;"></span><span class="mord"><span class="mtable"><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:5.5362em;"><span style="top:-7.5603em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-6.0362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-4.5362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-3.0362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-1.5362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-0.0121em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:1.5121em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:5.0362em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:5.5362em;"><span style="top:-7.6962em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">ECB Encryption: </span></span></span></span><span style="top:-6.1721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">ECB Decryption: </span></span></span></span><span style="top:-3.1721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">CBC Encryption: </span></span></span></span><span style="top:-1.6721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span></span></span><span style="top:-0.1479em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">CBC Decryption: </span></span></span></span><span style="top:1.3762em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:5.0362em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:1em;"></span><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:5.5362em;"><span style="top:-7.5603em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-6.0362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-3.0362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-1.5362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-0.0121em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:1.5121em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:5.0362em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:5.5362em;"><span style="top:-7.6962em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span><span style="top:-6.1721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-2.4086em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2914em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span><span style="top:-3.1721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.22222em;">V</span><span class="mclose">)</span></span></span><span style="top:-1.6721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span><span style="top:-0.1479em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-2.4086em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2914em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.22222em;">V</span></span></span><span style="top:1.3762em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.08125em;">H</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8641em;"><span style="top:-2.4086em;margin-left:-0.0813em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2914em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊕</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.05724em;">j</span><span class="mbin mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:5.0362em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:1em;"></span><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:5.5362em;"><span style="top:-7.5603em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-6.0362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-3.0362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-1.5362em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:-0.0121em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span><span style="top:1.5121em;"><span class="pstrut" style="height:2.8641em;"></span><span class="mord"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:5.0362em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:5.5362em;"><span style="top:-7.6962em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">for </span></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span></span></span><span style="top:-6.1721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">for </span></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span></span></span><span style="top:-3.1721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span></span></span><span style="top:-1.6721em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">for </span></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span></span></span><span style="top:-0.1479em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span></span></span><span style="top:1.3762em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord text"><span class="mord">for </span></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">2</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:5.0362em;"><span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p><strong>Note:</strong> The XOR prevents the problem of repeated 16-byte blocks.</p>
+<p>Further references for ECB mode and CBC mode (among others) can be found in NIST's <a href="https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf">Recommendation for Block Cipher Modes of Operation: <em>Methods and Techniques</em></a>.</p>
+<p><strong>Implement CBC Mode:</strong></p>
+<pre><code class="language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">AES_CBC</span>:
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self, key, iv=[<span class="hljs-number">0</span>]*<span class="hljs-number">16</span></span>):
+        self.cipher = AES_ECB(key, AES.MODE_ECB)
+        self.iv = iv
+    
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">aes_cbc_decrypt</span>(<span class="hljs-params">self, ctxt</span>):
+        <span class="hljs-comment"># Break ciphertext into blocks</span>
+        blocks = blockify(ctxt,<span class="hljs-number">16</span>)
+        <span class="hljs-comment"># P_1 = D(C_1) XOR IV</span>
+        ptxt = xor(self.cipher.dec(blocks[<span class="hljs-number">0</span>]), self.iv)
+        <span class="hljs-comment"># P_i = D(C_i) XOR C_(i-1) for i&gt;1</span>
+        <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">1</span>, <span class="hljs-built_in">len</span>(blocks)):
+            ptxt += xor(self.cipher.dec(blocks[i]), blocks[i-<span class="hljs-number">1</span>])
+        <span class="hljs-keyword">return</span> ptxt
+    
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">aes_cbc_encrypt</span>(<span class="hljs-params">self, ptxt</span>):
+        <span class="hljs-comment"># Break plaintext into blocks</span>
+        blocks = blockify(ptxt,<span class="hljs-number">16</span>)
+        <span class="hljs-comment"># C_1 = E(P_1 XOR IV)</span>
+        ctxt = self.cipher.enc(xor(blocks[<span class="hljs-number">0</span>],self.iv))
+        <span class="hljs-comment"># C_i = E(P_i XOR C_(i-1)) for i&gt;1</span>
+        <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">1</span>, <span class="hljs-built_in">len</span>(blocks)):
+            ctxt += self.cipher.enc(xor(blocks[i], ctxt[(i-<span class="hljs-number">1</span>)*<span class="hljs-number">16</span>:i*<span class="hljs-number">16</span>]))
+        <span class="hljs-keyword">return</span> ctxt
+</code></pre>
+<p>And complete the challenge</p>
+<pre><code class="language-python"><span class="hljs-keyword">from</span> base64 <span class="hljs-keyword">import</span> b64decode
+<span class="hljs-keyword">from</span> Utils.AES <span class="hljs-keyword">import</span> AES_CBC
+<span class="hljs-keyword">import</span> requests
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    <span class="hljs-comment"># 1. Save ciphertext</span>
+    URL = <span class="hljs-string">&quot;https://www.cryptopals.com/static/challenge-data/10.txt&quot;</span>
+    ctxt_str = requests.get(URL).text
+    ctxt = b64decode(ctxt_str)
+
+    <span class="hljs-comment"># 2. Decrypt ciphertext with AES CBC using the known key and IV</span>
+    KEY = <span class="hljs-string">b&quot;YELLOW SUBMARINE&quot;</span>
+    IV = [<span class="hljs-number">0</span>]*<span class="hljs-number">16</span>
+    cipher = AES_CBC(KEY, IV)
+    <span class="hljs-built_in">print</span>(cipher.dec(ctxt).decode(<span class="hljs-string">&#x27;utf-8&#x27;</span>))
+</code></pre>
+<p><strong>Output:</strong></p>
+<pre><code>I'm back and I'm ringin' the bell 
+A rockin' on the mike while the fly girls yell 
+In ecstasy in the back of me 
+Well that's my DJ Deshay cuttin' all them Z's 
+Hittin' hard and the girlies goin' crazy 
+Vanilla's on the mike, man I'm not lazy. 
+
+I'm lettin' my drug kick in 
+It controls my mouth and I begin 
+To just let it flow, let my concepts go 
+My posse's to the side yellin', Go Vanilla Go! 
+
+Smooth 'cause that's the way I will be 
+And if you don't give a damn, then 
+Why you starin' at me 
+So get off 'cause I control the stage 
+There's no dissin' allowed 
+I'm in my own phase 
+The girlies sa y they love me and that is ok 
+And I can dance better than any kid n' play 
+
+Stage 2 -- Yea the one ya' wanna listen to 
+It's off my head so let the beat play through 
+So I can funk it up and make it sound good 
+1-2-3 Yo -- Knock on some wood 
+For good luck, I like my rhymes atrocious 
+Supercalafragilisticexpialidocious 
+I'm an effect and that you can bet 
+I can take a fly girl and make her wet. 
+
+I'm like Samson -- Samson to Delilah 
+There's no denyin', You can try to hang 
+But you'll keep tryin' to get my style 
+Over and over, practice makes perfect 
+But not if you're a loafer. 
+
+You'll get nowhere, no place, no time, no girls 
+Soon -- Oh my God, homebody, you probably eat 
+Spaghetti with a spoon! Come on and say it! 
+
+VIP. Vanilla Ice yep, yep, I'm comin' hard like a rhino 
+Intoxicating so you stagger like a wino 
+So punks stop trying and girl stop cryin' 
+Vanilla Ice is sellin' and you people are buyin' 
+'Cause why the freaks are jockin' like Crazy Glue 
+Movin' and groovin' trying to sing along 
+All through the ghetto groovin' this here song 
+Now you're amazed by the VIP posse. 
+
+Steppin' so hard like a German Nazi 
+Startled by the bases hittin' ground 
+There's no trippin' on mine, I'm just gettin' down 
+Sparkamatic, I'm hangin' tight like a fanatic 
+You trapped me once and I thought that 
+You might have it 
+So step down and lend me your ear 
+'89 in my time! You, '90 is my year. 
+
+You're weakenin' fast, YO! and I can tell it 
+Your body's gettin' hot, so, so I can smell it 
+So don't be mad and don't be sad 
+'Cause the lyrics belong to ICE, You can call me Dad 
+You're pitchin' a fit, so step back and endure 
+Let the witch doctor, Ice, do the dance to cure 
+So come up close and don't be square 
+You wanna battle me -- Anytime, anywhere 
+
+You thought that I was weak, Boy, you're dead wrong 
+So come on, everybody and sing this song 
+
+Say -- Play that funky music Say, go white boy, go white boy go 
+play that funky music Go white boy, go white boy, go 
+Lay down and boogie and play that funky music till you die. 
+
+Play that funky music Come on, Come on, let me hear 
+Play that funky music white boy you say it, say it 
+Play that funky music A little louder now 
+Play that funky music, white boy Come on, Come on, Come on 
+Play that funky music 
+</code></pre>
+<h2 id="challenge-11-an-ecbcbc-detection-oracle">Challenge 11: An ECB/CBC detection oracle</h2>
+<p>From here, I began a separate file for oracles. Most problems after this consist of</p>
+<ol>
+<li>Creating an insecure system</li>
+<li>Prove system vulnerability by deciphering a secret text</li>
+</ol>
+<p>If everything is set up correctly from the previous challenges this oracle should be pretty straightforward.</p>
+<pre><code class="language-python"><span class="hljs-keyword">from</span> random <span class="hljs-keyword">import</span> randint, randbytes, getrandbits
+<span class="hljs-keyword">from</span> Utils.AES <span class="hljs-keyword">import</span> AES_ECB, AES_CBC
+<span class="hljs-keyword">from</span> Utils.Padding <span class="hljs-keyword">import</span> pkcs7
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">C11_Oracle</span>:
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self</span>):
+        <span class="hljs-keyword">if</span> getrandbits(<span class="hljs-number">1</span>):
+            self.mode = <span class="hljs-string">&quot;ECB&quot;</span>
+            self.cipher = AES_ECB(randbytes(<span class="hljs-number">16</span>))
+        <span class="hljs-keyword">else</span>:
+            self.mode = <span class="hljs-string">&quot;CBC&quot;</span>
+            iv = randbytes(<span class="hljs-number">16</span>)
+            self.cipher = AES_CBC(randbytes(<span class="hljs-number">16</span>), randbytes(<span class="hljs-number">16</span>))
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__call__</span>(<span class="hljs-params">self, ptxt: <span class="hljs-built_in">bytes</span></span>) -&gt; <span class="hljs-built_in">bytes</span>:
+        <span class="hljs-comment"># Prepend and append random bytes</span>
+        ptxt = randbytes(randint(<span class="hljs-number">5</span>,<span class="hljs-number">10</span>)) + ptxt + randbytes(randint(<span class="hljs-number">5</span>,<span class="hljs-number">10</span>))
+        <span class="hljs-comment"># Pad plaintext</span>
+        ptxt = pkcs7(ptxt, <span class="hljs-number">16</span>)
+        <span class="hljs-comment"># Encrypt randomly using ECB or CBC</span>
+        <span class="hljs-keyword">return</span> self.cipher.enc(ptxt)
+    
+    <span class="hljs-comment"># For testing only. Oracle should never actually reveal its mode.</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">get_mode</span>(<span class="hljs-params">self</span>):
+        <span class="hljs-keyword">return</span> self.mode
+</code></pre>
+<p>Remember from Challenge 8, we detected ECB mode through repeated blocks of plaintext. &quot;detect ECB encryption&quot;.</p>
+<pre><code class="language-python"><span class="hljs-keyword">from</span> c08 <span class="hljs-keyword">import</span> blockify
+<span class="hljs-keyword">from</span> Utils.Oracles <span class="hljs-keyword">import</span> C11_Oracle
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">break_C11_oracle</span>(<span class="hljs-params">oracle</span>):
+    <span class="hljs-comment"># String of identical bytes to trigger ECB detection</span>
+    ptxt = <span class="hljs-string">b&#x27;X&#x27;</span>*<span class="hljs-number">64</span>
+    ctxt = oracle(ptxt)
+
+    <span class="hljs-comment"># Break ciphertext into blocks and check for duplicates</span>
+    blocks = blockify(ctxt,<span class="hljs-number">16</span>)
+    <span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(<span class="hljs-built_in">set</span>(blocks)) &lt; <span class="hljs-built_in">len</span>(blocks): <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;ECB&quot;</span>
+    <span class="hljs-keyword">else</span>: <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;CBC&quot;</span>
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&#x27;__main__&#x27;</span>:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nTesting C11 Oracle...&quot;</span>)
+    oracle = C11_Oracle()
+    
+    ptxt = <span class="hljs-string">b&quot;This is some plaintext to be encrypted.&quot;</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Plaintext:&quot;</span>, ptxt.decode(<span class="hljs-string">&#x27;utf-8&#x27;</span>))
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Ciphertext:&quot;</span>, oracle(ptxt).<span class="hljs-built_in">hex</span>())
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nDetected encryption mode:&quot;</span>, break_C11_oracle(oracle))
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Actual encryption mode:&quot;</span>, oracle.get_mode())
+    
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nRunning tests...&quot;</span>)
+    <span class="hljs-keyword">for</span> _ <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">5</span>):
+        detected = break_C11_oracle(oracle)
+        actual = oracle.get_mode()
+        <span class="hljs-keyword">assert</span> detected == actual
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;SUCCESS&quot;</span>)
+</code></pre>
+<h2 id="challenge-12">Challenge 12</h2>
+<p>First, let's build an encryption oracle similar to the one we made for Challenge 11. We should always <strong>append</strong> the unknown string, but never return it directly.</p>
+<pre><code class="language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">C12_Oracle</span>:
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self</span>):
+        self.cipher = AES_ECB(randbytes(<span class="hljs-number">16</span>))
+        self.unknown = b64decode(<span class="hljs-string">&quot;Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg&quot;</span>
+            <span class="hljs-string">&quot;aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq&quot;</span>
+            <span class="hljs-string">&quot;dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg&quot;</span>
+            <span class="hljs-string">&quot;YnkK&quot;</span>
+        )
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__call__</span>(<span class="hljs-params">self, ptxt:<span class="hljs-built_in">bytes</span></span>) -&gt; <span class="hljs-built_in">bytes</span>:
+        ptxt += self.unknown
+        ptxt = pkcs7(ptxt, <span class="hljs-number">16</span>)
+        <span class="hljs-keyword">return</span> self.cipher.enc(ptxt)
+</code></pre>
+<p>We know the blocksize is 16. But how would we determine this exactly? All ciphertexts are returned in blocks. So we can make the plaintext input larger and larger until the ciphertext returns an additional block. The difference in the two sizes is the block's length.</p>
+<p>BUT we cannot pass in plaintext bytes whose length is not a multiple of blocksize. We can either:
+- Add padding functionality to encrypt/decrypt functions
+- Check for exceptions until we get a valid length. This length is a multiple of blocksize.
+I implement the first one because cookies can be variable size and I want to match a standard email input. But either one is fine.</p>
+<pre><code class="language-python"><span class="hljs-comment"># Determine block size of encryption oracle</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">detect_blocksize</span>(<span class="hljs-params">enc</span>) -&gt; <span class="hljs-built_in">int</span>:
+    <span class="hljs-comment"># Get length of ciphertext for empty input</span>
+    len1 = <span class="hljs-built_in">len</span>(enc(pkcs7(<span class="hljs-string">b&#x27;&#x27;</span>)))
+    <span class="hljs-comment"># Increment input length until ciphertext length increases</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> count(<span class="hljs-number">0</span>):
+        len2 = <span class="hljs-built_in">len</span>(enc(<span class="hljs-string">b&quot;X&quot;</span>*i))
+        <span class="hljs-comment"># When ciphertext length increases, we&#x27;ve crossed a block boundary</span>
+        <span class="hljs-keyword">if</span> len2 != len1: 
+            <span class="hljs-keyword">return</span> len2 - len1
+</code></pre>
+<p>But</p>
+<p>To verify the mode, we can simply reuse the logic from Challenge 11's <em>detect_mode</em> function. We pass in our encryption oracle and assert the mode is ECB.</p>
+<p>The first unknown byte of appended text should be at the end of a block. If we know the previous 15 bytes, we can iterate through possibilities for the last byte and find a matching ciphertext block.</p>
+<pre><code class="language-python"><span class="hljs-comment"># Imports</span>
+<span class="hljs-keyword">from</span> Utils.Padding <span class="hljs-keyword">import</span> strip_pkcs7
+<span class="hljs-keyword">from</span> itertools <span class="hljs-keyword">import</span> count
+
+<span class="hljs-comment"># Get next byte of unknown string by brute-forcing all possibilities</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">get_next_byte</span>(<span class="hljs-params">enc, bs, ptxt=<span class="hljs-string">b&quot;&quot;</span></span>):
+    <span class="hljs-comment"># Align ciphertext so next unknown byte is at block boundary</span>
+    pad = <span class="hljs-string">b&#x27;X&#x27;</span> * (((bs-<span class="hljs-number">1</span>)- <span class="hljs-built_in">len</span>(ptxt)) % bs)
+    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(pad + ptxt) % bs == bs-<span class="hljs-number">1</span>
+    ctxt = enc(pad)
+
+    <span class="hljs-comment"># Iterate through possible last-byte values. Check for equality.</span>
+    <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">256</span>):
+        test = enc(pad + ptxt + <span class="hljs-built_in">bytes</span>([i]))
+        <span class="hljs-keyword">if</span> test[:<span class="hljs-built_in">len</span>(pad)+<span class="hljs-built_in">len</span>(ptxt)+<span class="hljs-number">1</span>] == ctxt[:<span class="hljs-built_in">len</span>(pad)+<span class="hljs-built_in">len</span>(ptxt)+<span class="hljs-number">1</span>]:
+            <span class="hljs-keyword">return</span> <span class="hljs-built_in">bytes</span>([i])
+    <span class="hljs-keyword">return</span> <span class="hljs-string">b&#x27;&#x27;</span>
+
+<span class="hljs-comment"># Decrypt unknown string appended by oracle, byte-by-byte.</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">crack_ECB</span>(<span class="hljs-params">enc, bs=<span class="hljs-number">16</span></span>):
+    ptxt = <span class="hljs-string">b&#x27;&#x27;</span>
+    <span class="hljs-keyword">for</span> _ <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-built_in">len</span>(enc(<span class="hljs-string">b&#x27;&#x27;</span>))):
+        ptxt += get_next_byte(enc, bs, ptxt)
+    <span class="hljs-keyword">return</span> strip_pkcs7(ptxt)
+</code></pre>
+<p>We should expect the output to have standard padding. Let's create a small helper function to strip this PKCS#7 padding.</p>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">strip_pkcs7</span>(<span class="hljs-params">data: <span class="hljs-built_in">bytes</span></span>):
+    <span class="hljs-keyword">return</span> data[:-data[<span class="hljs-built_in">len</span>(data)-<span class="hljs-number">1</span>]]
+</code></pre>
+<p>We complete the challenge</p>
+<pre><code class="language-python"><span class="hljs-comment"># Imports</span>
+<span class="hljs-keyword">from</span> c11 <span class="hljs-keyword">import</span> detect_mode
+<span class="hljs-keyword">from</span> Utils.Oracles <span class="hljs-keyword">import</span> C12_Oracle
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    <span class="hljs-comment"># Build encryption oracle</span>
+    enc = C12_Oracle()
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Testing C12 Oracle...&quot;</span>)
+    ptxt = <span class="hljs-string">b&quot;HELLO WORLD&quot;</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nPlaintext:&quot;</span>, ptxt)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Ciphertext:&quot;</span>, enc(ptxt).<span class="hljs-built_in">hex</span>())
+
+    <span class="hljs-comment"># Examine ciphertext for empty plaintext</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nInterestingly, empty plaintext always returns the same ciphertext.&quot;</span>)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Ciphertext:&quot;</span>, enc(<span class="hljs-string">b&quot;&quot;</span>).<span class="hljs-built_in">hex</span>())
+
+    <span class="hljs-comment"># Discover blocksize of cipher</span>
+    bs = detect_blocksize(enc)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nDetected block size:&quot;</span>, bs)
+    <span class="hljs-keyword">assert</span> bs == <span class="hljs-number">16</span>
+
+    <span class="hljs-comment"># Ensure oracle is using ECB</span>
+    mode = detect_mode(enc)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Detected mode:&quot;</span>, mode)
+    <span class="hljs-keyword">assert</span> mode == <span class="hljs-string">&quot;ECB&quot;</span>
+
+    <span class="hljs-comment"># Decrypt unknown string</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;\nDECRYPTED CIPHERTEXT:&quot;</span>)
+    ptxt = crack_ECB(enc, bs)
+    <span class="hljs-built_in">print</span>(ptxt.decode(<span class="hljs-string">&#x27;utf-8&#x27;</span>))
+</code></pre>
+<h2 id="challenge-13--ecb-cut-and-paste-attack">Challenge 13 — ECB Cut-and-Paste Attack</h2>
+<h3 id="oracle">Oracle</h3>
+<p>Our oracle encrypts structured cookie strings:</p>
+<pre><code>[email]=foo@bar.com&amp;uid=10&amp;role=user
+</code></pre>
+<p>We create on oracle which takes an email and returns the cookie.</p>
+<pre><code class="language-python"><span class="hljs-keyword">class</span> <span class="hljs-title class_">C13_Oracle</span>:
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self</span>):
+        self.cipher = AES_ECB(Random.new().read(<span class="hljs-number">16</span>))
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">encrypt</span>(<span class="hljs-params">self, email</span>):
+        email = email.replace(<span class="hljs-string">&#x27;&amp;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>).replace(<span class="hljs-string">&#x27;=&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>)
+        d = {
+            <span class="hljs-string">&#x27;email&#x27;</span>: email,
+            <span class="hljs-string">&#x27;uid&#x27;</span>: <span class="hljs-number">10</span>,
+            <span class="hljs-string">&#x27;role&#x27;</span>: <span class="hljs-string">&#x27;user&#x27;</span>
+        }
+        <span class="hljs-keyword">return</span> self.cipher.encrypt(kv_encode(d).encode())
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">decrypt</span>(<span class="hljs-params">self, ctxt</span>):
+        <span class="hljs-keyword">return</span> self.cipher.decrypt(ctxt)
+</code></pre>
+<h3 id="method">Method</h3>
+<p><strong>AES-ECB</strong> encrypts each 16-byte block <em>independently</em>:</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mi>i</mi></msub><mo>=</mo><mi>A</mi><mi>E</mi><msub><mi>S</mi><mi>K</mi></msub><mo stretchy="false">(</mo><msub><mi>P</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">C_i = AES_K(P_i)
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">A</span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0576em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.1389em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span></span></p>
+<p>Because blocks have no dependency on one another, an attacker can <strong>rearrange, duplicate, or splice ciphertext blocks</strong> freely.</p>
+<h4 id="carve-out-an-admin-block">Carve out an <code>admin</code> block</h4>
+<p>We need a ciphertext block which decrypts to:</p>
+<pre><code>admin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b
+</code></pre>
+<p>(the word <code>admin</code> followed by 11 bytes of PKCS#7 padding, since <code>16 - 5 = 11</code>)</p>
+<p>The oracle always prepends <code>email=</code> (6 bytes). To push <code>admin...</code> into a clean block boundary, we pad with:</p>
+<pre><code>prefix_len = 16 - len(&quot;email=&quot;) = 10
+</code></pre>
+<p>So the email input is:</p>
+<pre><code>email = ('X' * 10) + &quot;admin&quot; + (\x0b * 11)
+</code></pre>
+<p>The resulting plaintext blocks are:</p>
+<table>
+<thead>
+<tr>
+<th>Block 1 (bytes 0–15)</th>
+<th>Block 2 (bytes 16–31)</th>
+<th>Block 3 (bytes 32–47)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>email=XXXXXXXXXX</code></td>
+<td><code>admin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b</code></td>
+<td><code>&amp;uid=10&amp;role=user</code></td>
+</tr>
+</tbody>
+</table>
+<p>Block 2 of <code>ctxt1</code> is our target — it's an encrypted <code>admin</code> block with valid padding.</p>
+<h4 id="get-a-ciphertext-with-role-at-a-block-boundary">Get a ciphertext with <code>role=</code> at a block boundary</h4>
+<p>We need:</p>
+<pre><code>email=goop@goop.   |   com&amp;uid=10&amp;role=   |   user\x0c*12
+</code></pre>
+<p>The email <code>goop@goop.com</code> (13 chars) satisfies:</p>
+<pre><code>len(&quot;email=&quot;) + 13 = 19 ≡ 3 (mod 16)
+</code></pre>
+<p>So <code>role=</code> falls exactly at byte 32 — the start of block 3. Block 3 of <code>ctxt2</code> would normally encrypt <code>user\x0c...</code>, but we can <strong>replace it</strong>.</p>
+<h4 id="splice">Splice</h4>
+<pre><code>forged_ctxt = ctxt2[0:32]  +  ctxt1[16:32]
+</code></pre>
+<p>This assembles:</p>
+<table>
+<thead>
+<tr>
+<th>Block 1</th>
+<th>Block 2</th>
+<th>Block 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>email=goop@goop.</code></td>
+<td><code>com&amp;uid=10&amp;role=</code></td>
+<td><code>admin\x0b...\x0b</code> ← spliced in</td>
+</tr>
+</tbody>
+</table>
+<p>Decryption yields a valid <code>role=admin</code> cookie.</p>
+<h3 id="formula-summary">Formula Summary</h3>
+<p>Let <code>b = 16</code> (blocksize), <code>p = len(&quot;email=&quot;) = 6</code>.</p>
+<pre><code>prefix_pad = b - p = 10        # bytes needed before &quot;admin&quot;
+suffix_pad = b - len(&quot;admin&quot;) = 11   # PKCS#7 padding value
+
+forged = encrypt(&quot;X&quot;*10 + &quot;admin&quot; + &quot;\x0b&quot;*11)[b:2b]   # the admin block
+base   = encrypt(&quot;goop@goop.com&quot;)[:2b]                  # blocks 1–2 with role= at boundary
+
+result = base + forged
+</code></pre>
+<hr>
+<h2 id="challenge-14--harder-ecb-byte-at-a-time-decryption">Challenge 14 — Harder ECB Byte-at-a-Time Decryption</h2>
+<h3 id="oracle-1">Oracle</h3>
+<p>The oracle now prepends a <strong>random-length random prefix</strong> before the attacker-controlled input and a secret suffix:</p>
+<pre><code>encrypt(random_prefix || attacker_input || secret_suffix)
+</code></pre>
+<p>The goal is to recover <code>secret_suffix</code> one byte at a time.</p>
+<h3 id="method-1">Method</h3>
+<p>In challenge 12, the oracle had no prefix. Here, the prefix complicates block alignment, but the fundamental attack is the same.</p>
+<p>If you can align the secret suffix to a known block boundary, you can recover it one byte at a time by:</p>
+<ul>
+<li>Creating a dictionary which maps all 256 possible last bytes to their corresponding block.</li>
+<li>Observing which dictionary entry's ciphertext matches the real output.</li>
+</ul>
+<h3 id="prefix">Prefix</h3>
+<p>Let <code>r = len(random_prefix)</code>. We don't know <code>r</code>, but <code>detect_prefix_length()</code> finds it by:</p>
+<ul>
+<li>Encrypting increasing lengths of identical bytes until a duplicate block appears (ECB produces identical ciphertext for identical plaintext blocks).</li>
+<li>The number of padding bytes needed to produce that duplication tells us <code>r mod b</code>.</li>
+<li>The block index of the duplicate reveals how many full blocks the prefix occupies.</li>
+</ul>
+<p>Once <code>r</code> is known:</p>
+<pre><code>prefix_padding = (-r) mod b        # bytes to align prefix to a block boundary
+offset = r + prefix_padding        # total bytes before our controlled region
+</code></pre>
+<p>We then prepend <code>prefix_padding</code> filler bytes to every oracle call, effectively eliminating the prefix from our attack surface.</p>
+<h3 id="byte-at-a-time-recovery">Byte-at-a-time recovery</h3>
+<p>For each target byte at index <code>i</code> in the secret suffix:</p>
+<pre><code>known_bytes = already recovered bytes
+pad_len = (b - 1 - i) mod b       # shrink controlled input by 1 each round
+
+# Dictionary phase: for each candidate byte c in 0..255:
+query = prefix_padding + pad_input + known_bytes + [c]
+dict[encrypt(query)[target_block]] = c
+
+# Oracle phase:
+real_ctxt = oracle(prefix_padding + pad_input)
+recovered_byte = dict[real_ctxt[target_block]]
+</code></pre>
+<p>This is repeated until the full suffix is recovered.</p>
+<hr>
+<h2 id="challenge-15--pkcs7-padding-validation">Challenge 15 — PKCS#7 Padding Validation</h2>
+<h3 id="valid-padding-formula">Valid padding formula</h3>
+<p>Given a plaintext block <code>P</code> of length <code>L</code>, padding is valid if and only if:</p>
+<pre><code>n = P[-1]                          # last byte value
+1 ≤ n ≤ blocksize
+P[-n:] == bytes([n] * n)          # last n bytes all equal n
+</code></pre>
+<h2 id="challenge-16--cbc-bit-flipping-attack">Challenge 16 — CBC Bit-Flipping Attack</h2>
+<h3 id="whats-being-attacked">What's being attacked</h3>
+<p>An oracle encrypts:</p>
+<pre><code>&quot;comment1=cooking%20MCs;userdata=&quot; + user_input + &quot;;comment2=...&quot;
+</code></pre>
+<p>It sanitizes <code>;</code> and <code>=</code> from <code>user_input</code>. The goal is to produce a ciphertext that decrypts to something containing <code>;admin=true</code>.</p>
+<h3 id="method-2">Method</h3>
+<p><strong>AES-CBC</strong> decrypts as:</p>
+<pre><code>P_i = AES_K(C_i) XOR C_{i-1}
+</code></pre>
+<p>This means flipping a bit in ciphertext block <code>C_{i-1}</code> causes a <strong>predictable, controlled flip</strong> in the corresponding bit of plaintext block <code>P_i</code> (at the cost of completely garbling <code>P_{i-1}</code>).</p>
+<h3 id="oracle-attack">Oracle Attack</h3>
+<h4 id="identify-the-prefix">Identify the prefix</h4>
+<pre><code>prefix = b&quot;comment1=cooking%20MCs;userdata=&quot;   # 32 bytes = exactly 2 blocks
+</code></pre>
+<p>Because the prefix is exactly 2 blocks, no extra padding is needed. Our input starts at block 3 (byte offset 32).</p>
+<h4 id="submit-a-crafted-plaintext">Submit a crafted plaintext</h4>
+<p>Instead of <code>;admin=true</code> (which gets sanitized), submit:</p>
+<pre><code>?????9admin9true
+</code></pre>
+<p>where <code>9</code> is used as a stand-in for <code>;</code> and <code>=</code> (they share no bits).</p>
+<p>After encryption, this plaintext occupies block 3 (bytes 32–47) of the ciphertext.</p>
+<h4 id="flip-bits-in-the-preceding-ciphertext-block">Flip bits in the preceding ciphertext block</h4>
+<p>To turn <code>9</code> (ASCII <code>0x39</code>) into <code>;</code> (ASCII <code>0x3B</code>) in the decrypted output, XOR the corresponding byte in block 2 of the ciphertext:</p>
+<pre><code>C'[i] = C[i] XOR ord('9') XOR ord(';')
+</code></pre>
+<p>The general formula for a single-byte flip targeting plaintext position <code>i</code> in block <code>n</code>:</p>
+<pre><code>C'[offset] = C[offset] XOR (current_char XOR desired_char)
+</code></pre>
+<p>where <code>offset = (n-1)*blocksize + byte_index_within_block</code>.</p>
+<h4 id="assemble-the-forged-ciphertext">Assemble the forged ciphertext</h4>
+<p>The code computes:</p>
+<pre><code class="language-python">l = prefix_length + prefix_padding   <span class="hljs-comment"># = 32 (already aligned)</span>
+
+forged = ctxt[:l-<span class="hljs-number">11</span>]
+       + (ctxt[l-<span class="hljs-number">11</span>] ^ <span class="hljs-built_in">ord</span>(<span class="hljs-string">&#x27;9&#x27;</span>) ^ <span class="hljs-built_in">ord</span>(<span class="hljs-string">&#x27;;&#x27;</span>))    <span class="hljs-comment"># flip &#x27;9&#x27; → &#x27;;&#x27;</span>
+       + ctxt[l-<span class="hljs-number">10</span> : l-<span class="hljs-number">5</span>]
+       + (ctxt[l-<span class="hljs-number">5</span>]  ^ <span class="hljs-built_in">ord</span>(<span class="hljs-string">&#x27;9&#x27;</span>) ^ <span class="hljs-built_in">ord</span>(<span class="hljs-string">&#x27;=&#x27;</span>))    <span class="hljs-comment"># flip &#x27;9&#x27; → &#x27;=&#x27;</span>
+       + ctxt[l-<span class="hljs-number">4</span>:]
+</code></pre>
+<p>Block 2 of the ciphertext is garbled upon decryption (accepted collateral damage), but block 3 decrypts to <code>;admin=true</code>.</p>
+
+            <script async src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+            
+        </body>
+        </html>
