@@ -3,6 +3,7 @@ from random import randint
 from random import randbytes
 from Utils.AES import AES_CBC
 from Utils.Hash import SHA1
+from hashlib import sha256 as SHA2
 
 def modexp(b, e, m):
     # https://en.wikipedia.org/wiki/Modular_exponentiation)
@@ -16,6 +17,7 @@ def modexp(b, e, m):
         b = (b * b) % m
     return res
 
+# https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-56Ar3.pdf
 class DiffieHellman:
     g_default = 2
     p_default = int('ffffffffffffffffc90fdaa22168c234c4c6628b80d'
@@ -53,3 +55,5 @@ class DiffieHellman:
         ptxt = AES_CBC(SHA1(key)[:16], iv).decrypt(ctxt[:-16]) # decrypt the ciphertext (excluding the iv)
         # use the key to decrypt the ciphertext (not implemented here)
         return ptxt
+
+

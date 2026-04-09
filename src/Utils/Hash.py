@@ -1,6 +1,6 @@
 #from base64 import b64encode, b64decode
 import struct
-#import hashlib
+#from hashlib import sha256
 #from random import randint
 
 from Utils.BytesLogic import xor
@@ -198,6 +198,10 @@ def MD4_MAC(msg, key):
 
 class HMAC:
     @staticmethod
+    def _xor(data: bytes, mask: bytes) -> bytes:
+        return bytes(a ^ b for a, b in zip(data, mask))
+
+    @staticmethod
     def _compute_block_sized_key(key: bytes, hash_func: Callable[[bytes], bytes], block_size: int):
         # Keys longer than [block_size] are shortened by hashing them
         if len(key) > block_size:
@@ -205,7 +209,7 @@ class HMAC:
 
         # Keys shorter than [block_size] are padded to [block_size] by padding with zeros on the right
         if len(key) < block_size:
-            return key + bytes(block_size - len(key))
+            key = key + b'\x00' * (block_size - len(key))
 
         return key
 
@@ -215,17 +219,25 @@ class HMAC:
         block_sized_key = cls._compute_block_sized_key(key, hash_func, block_size)
 
         # Outer & Inner padded key
-        o_key_pad = xor(block_sized_key, bytes([0x5c] * block_size))
-        i_key_pad = xor(block_sized_key, bytes([0x36] * block_size))
+        o_key_pad = cls._xor(block_sized_key, bytes([0x5c] * block_size))
+        i_key_pad = cls._xor(block_sized_key, bytes([0x36] * block_size))
 
         # calc hash
-        return hash_func(o_key_pad + hash_func(i_key_pad + msg))
+        in_hash = hash_func(i_key_pad + msg)
+        return hash_func(o_key_pad + in_hash)
 
     @classmethod
     def sha1(cls, key: bytes, msg: bytes):
         hash_func = SHA1
         block_size = 64
         return cls._process(key=key, msg=msg, hash_func=hash_func, block_size=block_size)
+    
+    @classmethod
+    def sha256(cls, key: bytes, msg: bytes):
+        import hashlib
+        # Wrapper to match your hash_func(bytes) -> bytes signature
+        h_func = lambda d: hashlib.sha256(d).digest()
+        return cls._process(key, msg, h_func, block_size=64)
 
 
 
