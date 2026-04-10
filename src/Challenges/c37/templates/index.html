@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>SRP Login</h2>
+    <input type="text" id="user" value="goop@goop.com">
+    <input type="password" id="pass" value="hunter2">
+    <button onclick="runSRP()">Secure Login</button>
+    <p id="status"></p>
+    <h1>Status: {{ server_status }}</h1>
+    
+    <script>
+        function modexp(base, exp, mod) {
+            let res = 1n;
+            base = base % mod;
+            while (exp > 0n) {
+                if (exp % 2n === 1n) res = (res * base) % mod;
+                base = (base * base) % mod;
+                exp = exp / 2n;
+            }
+            return res;
+        }
+
+        const N = 37n; const g = 2n; const k = 3n;
+
+        async function runSRP() {
+            const I = document.getElementById('user').value;
+            const P = document.getElementById('pass').value;
+            const status = document.getElementById('status');
+
+            // --- STEP 1: Client Ephemeral ---
+            const a = BigInt(Math.floor(Math.random() * 20) + 2);
+            //const A = (g ** a) % N;
+            const A = 0 // A is 0
+            console.log("Client A:", A.toString());
+
+            const res1 = await fetch('/step1', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ I, A: Number(A) })
+            });
+            const { salt, B } = await res1.json();
+            console.log("Server sent Salt/B:", salt, B);
+            
+            // --- STEP 2: Client Math ---
+            // x = H(salt, P)
+            const x = await hashToBigInt(salt.toString() + P);
+            // u = H(A, B)
+            const u = await hashToBigInt(A.toString() + B.toString());
+            console.log("Client u:", u.toString());
+            
+            // S = (B - k*g^x) ^ (a + ux) % N
+            const v = modexp(g, x, N);
+            const base = (BigInt(B) - (k * v) % N + N) % N;
+            const exp = a + (u * x);
+            const S = modexp(base, exp, N); // A=0 ==> S=0
+            console.log("Client S:", S.toString());
+
+            // K = H(S)
+            const K_hex = await hashToHex(S.toString());
+            console.log("Client K:", K_hex);
+            // Proof = H(K, salt)
+            const proof = await hashToHex(K_hex + salt.toString());
+            console.log("Client Proof:", proof);
+
+            console.log("Client A:", A.toString());
+            console.log("We can calculate server K:", await hashStr(0)); // S=0 means K=H(0)
+            console.log("Server expects proof:", await hashToHex(String(await hashStr(0)) + salt.toString()));            
+            // Thus we can calculate expected proof without knowing password
+            expected_proof = await hashToHex(String(await hashStr(0)) + salt.toString());
+            //console.log("Client Proof (base64):", btoa(proof));
+            //console.log("Client Proof (hex):", proof);
+            //console.log("HMAC of '0' and salt:", await computeHMAC("0", salt.toString()));
+            
+
+            // --- STEP 3: Send Proof ---
+
+
+            const res2 = await fetch('/step2', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ A: Number(A), hm: btoa(expected_proof) })
+            });
+            const final = await res2.json();
+            status.innerText = final.status || final.error;
+        }
+
+        // Helper functions for Web Crypto API
+        async function hashToHex(str) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        async function hashToBigInt(str) {
+            const hex = await hashToHex(str);
+            return BigInt('0x' + hex);
+        }
+        async function hashStr(data) {
+            const msgUint8 = new TextEncoder().encode(String(data));
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            
+            // Convert buffer to hex string
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            return hashHex;
+        }
+
+    </script>
+</body>
+</html>
